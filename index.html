@@ -1281,7 +1281,7 @@ const NEW_WORLDS = {
 // world order: levels walk through these, a boss every 4th level
 { const by=n=>THEMES.find(T=>T.name===n), N=NEW_WORLDS;
   const order=[by('Sunrise Meadow'),N.mushroom,by('Candy Cove'),by('Twilight Glen'),N.water,by('Crystal Peaks'),N.pumpkin,N.fire,
-    N.neon,N.space,N.mirror,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
+    N.neon,N.space,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
   THEMES.splice(0,THEMES.length,...order); }
 
 /* ---------- silly spiders: they bob up and down on threads. Touch one and it tickles you (slows you down) ---------- */
