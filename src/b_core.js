@@ -47,7 +47,7 @@ const CONFIG = {
   zoom: { airStart: 10, airRange: 220, airMin: .26, peakStart: 60, peakRange: 200, peakMin: .5, uphill: 1.12, slowmo: .5, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you
   rubberBand: [0.86, 1.06],
-  items: { magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
+  items: { sightTime: 14, magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
   combo: n => n*(n-1),   // bonus gems for clearing n obstacles in one flight
   slowmo: { height: 46, time: 0.65, scale: 0.35 },
   // levels come in chapters: 3 races then a boss. Each chapter is faster with more obstacles.
@@ -224,6 +224,7 @@ const bigGemSpr = padSprite(10,11,['#ffbf1f','#fff0a8','#ffffff'],x=>{ poly(x,'#
 const ORB_ICON = {
   shield:x=>{ x.fillStyle='#4f8fff'; [[5,3],[6,3],[7,3],[4,4],[8,4],[4,5],[8,5],[4,6],[8,6],[5,7],[7,7],[6,8]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#bfe0ff'; x.fillRect(6,5,2,2); },
   magnet:x=>{ x.fillStyle='#e8455f'; [[4,3],[4,4],[4,5],[4,6],[8,3],[8,4],[8,5],[8,6],[5,7],[6,8],[7,7]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#d8dcf0'; x.fillRect(5,3,1,1); x.fillRect(9,3,1,1); },
+  sight: x=>{ x.fillStyle='#ff5fa8'; [[3,6],[4,5],[5,4],[6,4],[7,4],[8,5],[9,6],[4,7],[5,8],[6,8],[7,8],[8,7]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#7a3fbf'; x.fillRect(6,6,3,3); x.fillStyle='#ffffff'; x.fillRect(6,6,1,1); x.fillStyle='#ffd76a'; x.fillRect(11,2,1,1); x.fillRect(2,2,1,1); },
   super: x=>{ x.fillStyle='#ffbf1f'; [[6,2],[6,3],[5,4],[6,4],[7,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[5,6],[6,6],[7,6],[4,7],[5,7],[7,7],[8,7],[4,8],[8,8]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); },
 };
 const orbSpr = {}; for(const k in ORB_ICON) orbSpr[k]=padSprite(13,13,['#f3ecff','#d9c6ff'],x=>{ circ(x,'#d9c6ff',[[6.5,6.5,6.2]]); circ(x,'#f3ecff',[[6.5,6.5,5]]); }, x=>{ ORB_ICON[k](x); x.fillStyle='#ffffff'; x.fillRect(4,3,2,1); }, '#8a6bbf');
@@ -394,7 +395,7 @@ function buildTrack(L){
   const some=()=>{ const n=R()<.15+.55*d?3:R()<.3+.4*d?2:1, l=[0,1,2]; while(l.length>n) l.splice(Math.floor(R()*l.length),1); return l; };
   const notAll=()=>{ const l=[0,1,2]; l.splice(ri(0,2),1); if(R()<.65-.3*d) l.splice(ri(0,1),1); return l; };
   const gem=(x,lane,off,abs=false,big=false)=>gems.push({x:Math.round(x),ly:lane,off,abs,v:big?5:1,big,c:hash(Math.round(x)+lane)%3});
-  const orb=(x,lane,off,abs=false)=>{ const r=R(); orbs.push({x:Math.round(x),ly:lane,off,abs,type:r<.4?'shield':r<.72?'magnet':'super'}); };
+  const orb=(x,lane,off,abs=false)=>{ const r=R(); orbs.push({x:Math.round(x),ly:lane,off,abs,type:r<.3?'shield':r<.55?'magnet':r<.8?'sight':'super'}); };
   const autoClouds=[], autoPaths=[];
   FINISH_X=(style==='speedway'?8800:style==='mountains'?8400:6400)+Math.round(1500*d); TRACK_LEN=FINISH_X+600;
   let x=300; if(d>.25) fence(x,some()); gem(x,1,26); x+=150;

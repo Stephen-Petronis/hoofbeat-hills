@@ -150,7 +150,7 @@ function renderView(focus,cam,y0){
     else drawRacer(it.r,cx);
   }
   for(const p of particles) drawParticle(p,cx);
-  if(!twoP && !demo && focus.isPlayer && focus.state==='air' && focus.alt-heightAt(focus.x)>26) drawTrajectory(focus,cx);
+  if(!twoP && !demo && focus.isPlayer && focus.state==='air' && (focus.alt-heightAt(focus.x)>26 || focus.sightT>0)) drawTrajectory(focus,cx);
   // combo counter over the pony
   for(const r of players) if(r.combo>=2 && r.state==='air'){ pixelText('×'+r.combo, Math.round(r.x-cx), Math.round(ry(r))-36); }
   renderForeground(cam.x);
@@ -270,17 +270,34 @@ function renderPhoto(){
   pixelText(ponyName(photo.kind),160,22,'#fff6fb');
 }
 
-// dotted guide while flying: white = where you'll land, pink = where you'd land if you dive right now
+// glowing landing guide while flying: pink sparkle path = where you'll land, lilac = where you'd land if you dive now.
+// SPARKLE SIGHT power-up: rainbow, longer, on every hop, with a comet racing along it. STAR TURBO: gold
 function drawTrajectory(r,cx){
-  const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1;   // chunkier dots when zoomed way out
-  const sim=(dive,col)=>{ let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
-    for(let i=0;i<180;i++){
+  const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1, sight=r.sightT>0, gold=r.starT>0;
+  const sim=dive=>{ const pts=[]; let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
+    for(let i=0;i<(sight?240:180);i++){
       if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*WR.grav*dt;
       const pa=a; x+=vx*dt; a+=vz*dt; let g=heightAt(x);
       for(const c of clouds) if(vz<0 && pa>=c.h && a<=c.h && x>=c.x && x<=c.x+c.len){ g=c.h; break; }
-      if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; const X=(dx,dy,w,h)=>ctx.fillRect(sx+dx*m,sy+dy*m,w*m,h*m);
-        X(-2,-2,1,1); X(2,-2,1,1); X(-1,-1,3,1); X(0,-1,1,1); X(-2,0,1,1); X(2,0,1,1); return; }
-      if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2*m,2*m); }
-    } };
-  ctx.globalAlpha=.9; sim(false,'#ffffff'); if(!r.dive) sim(true,'#ff6fae'); ctx.globalAlpha=1;
+      if(a<=g){ pts.push([x,g,true]); return pts; }
+      pts.push([x,a,false]); }
+    return pts; };
+  const draw=(pts,dive)=>{ if(pts.length<2) return; const n=pts.length;
+    const hue=i=>gold?`hsl(${44+8*Math.sin(t*8+i*.3)},100%,${64+12*Math.sin(t*10+i*.5)}%)`:sight?`hsl(${(i*14-t*240)%360+360},95%,72%)`:dive?'#c9a6ff':'#ff6fae';
+    const glow=gold?'rgba(255,215,106,.32)':sight?'rgba(255,255,255,.3)':dive?'rgba(201,166,255,.28)':'rgba(255,111,174,.32)';
+    // soft glow
+    ctx.fillStyle=glow; for(let i=2;i<n;i+=2){ const [x,a]=pts[i]; const R=(sight?3:2)*m; ctx.fillRect(Math.round(x-cx)-R,Math.round(base-a)-R+1,R*2,R*2-2); ctx.fillRect(Math.round(x-cx)-R+1,Math.round(base-a)-R,R*2-2,R*2); }
+    // shiny dots that shimmer
+    for(let i=2;i<n;i+=2){ const [x,a]=pts[i], sx=Math.round(x-cx), sy=Math.round(base-a), tw=((t*12+i)|0)%6===0;
+      ctx.fillStyle=tw?'#ffffff':hue(i); ctx.fillRect(sx,sy,2*m,2*m); if(tw||sight&&i%6===0){ ctx.fillStyle='#ffffff'; ctx.fillRect(sx-m,sy+m/2|0,4*m,m); ctx.fillRect(sx+m/2|0,sy-m,m,4*m); } }
+    // a little comet zooming along the path
+    if(!dive){ const k=Math.floor((t*(sight?60:35))%n), [x,a]=pts[k], sx=Math.round(x-cx), sy=Math.round(base-a);
+      ctx.fillStyle='#ffffff'; ctx.fillRect(sx-2*m,sy,5*m,m); ctx.fillRect(sx,sy-2*m,m,5*m); ctx.fillStyle=hue(k); ctx.fillRect(sx-m,sy-m,3*m,3*m); ctx.fillStyle='#ffffff'; ctx.fillRect(sx,sy,m,m); }
+    // landing spot: a pulsing heart (or a lilac ring for the dive)
+    const [lx,la,hit]=pts[n-1]; if(!hit) return; const sx=Math.round(lx-cx), sy=Math.round(base-la), pz=1+((t*4|0)%2), s=m*(dive?1:pz);
+    if(dive){ ctx.fillStyle='#c9a6ff'; ctx.fillRect(sx-2*s,sy-s,s,s); ctx.fillRect(sx+2*s,sy-s,s,s); ctx.fillRect(sx-s,sy-2*s,3*s,s); ctx.fillRect(sx-s,sy,3*s,s); return; }
+    ctx.fillStyle='rgba(255,111,174,.35)'; ctx.fillRect(sx-4*s,sy-5*s,9*s,7*s);
+    ctx.fillStyle=gold?'#ffd76a':'#ff3f96'; ctx.fillRect(sx-2*s,sy-4*s,2*s,s); ctx.fillRect(sx+s,sy-4*s,2*s,s); ctx.fillRect(sx-3*s,sy-3*s,7*s,2*s); ctx.fillRect(sx-2*s,sy-s,5*s,s); ctx.fillRect(sx-s,sy,3*s,s);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(sx-2*s,sy-3*s,s,s); };
+  ctx.save(); ctx.globalAlpha=.95; if(!r.dive) draw(sim(true),true); draw(sim(false),false); ctx.restore();
 }

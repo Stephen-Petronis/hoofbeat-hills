@@ -447,7 +447,7 @@ const CONFIG = {
   zoom: { airStart: 10, airRange: 220, airMin: .26, peakStart: 60, peakRange: 200, peakMin: .5, uphill: 1.12, slowmo: .5, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you
   rubberBand: [0.86, 1.06],
-  items: { magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
+  items: { sightTime: 14, magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
   combo: n => n*(n-1),   // bonus gems for clearing n obstacles in one flight
   slowmo: { height: 46, time: 0.65, scale: 0.35 },
   // levels come in chapters: 3 races then a boss. Each chapter is faster with more obstacles.
@@ -624,6 +624,7 @@ const bigGemSpr = padSprite(10,11,['#ffbf1f','#fff0a8','#ffffff'],x=>{ poly(x,'#
 const ORB_ICON = {
   shield:x=>{ x.fillStyle='#4f8fff'; [[5,3],[6,3],[7,3],[4,4],[8,4],[4,5],[8,5],[4,6],[8,6],[5,7],[7,7],[6,8]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#bfe0ff'; x.fillRect(6,5,2,2); },
   magnet:x=>{ x.fillStyle='#e8455f'; [[4,3],[4,4],[4,5],[4,6],[8,3],[8,4],[8,5],[8,6],[5,7],[6,8],[7,7]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#d8dcf0'; x.fillRect(5,3,1,1); x.fillRect(9,3,1,1); },
+  sight: x=>{ x.fillStyle='#ff5fa8'; [[3,6],[4,5],[5,4],[6,4],[7,4],[8,5],[9,6],[4,7],[5,8],[6,8],[7,8],[8,7]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); x.fillStyle='#7a3fbf'; x.fillRect(6,6,3,3); x.fillStyle='#ffffff'; x.fillRect(6,6,1,1); x.fillStyle='#ffd76a'; x.fillRect(11,2,1,1); x.fillRect(2,2,1,1); },
   super: x=>{ x.fillStyle='#ffbf1f'; [[6,2],[6,3],[5,4],[6,4],[7,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[5,6],[6,6],[7,6],[4,7],[5,7],[7,7],[8,7],[4,8],[8,8]].forEach(([a,b])=>x.fillRect(a+1,b+1,1,1)); },
 };
 const orbSpr = {}; for(const k in ORB_ICON) orbSpr[k]=padSprite(13,13,['#f3ecff','#d9c6ff'],x=>{ circ(x,'#d9c6ff',[[6.5,6.5,6.2]]); circ(x,'#f3ecff',[[6.5,6.5,5]]); }, x=>{ ORB_ICON[k](x); x.fillStyle='#ffffff'; x.fillRect(4,3,2,1); }, '#8a6bbf');
@@ -794,7 +795,7 @@ function buildTrack(L){
   const some=()=>{ const n=R()<.15+.55*d?3:R()<.3+.4*d?2:1, l=[0,1,2]; while(l.length>n) l.splice(Math.floor(R()*l.length),1); return l; };
   const notAll=()=>{ const l=[0,1,2]; l.splice(ri(0,2),1); if(R()<.65-.3*d) l.splice(ri(0,1),1); return l; };
   const gem=(x,lane,off,abs=false,big=false)=>gems.push({x:Math.round(x),ly:lane,off,abs,v:big?5:1,big,c:hash(Math.round(x)+lane)%3});
-  const orb=(x,lane,off,abs=false)=>{ const r=R(); orbs.push({x:Math.round(x),ly:lane,off,abs,type:r<.4?'shield':r<.72?'magnet':'super'}); };
+  const orb=(x,lane,off,abs=false)=>{ const r=R(); orbs.push({x:Math.round(x),ly:lane,off,abs,type:r<.3?'shield':r<.55?'magnet':r<.8?'sight':'super'}); };
   const autoClouds=[], autoPaths=[];
   FINISH_X=(style==='speedway'?8800:style==='mountains'?8400:6400)+Math.round(1500*d); TRACK_LEN=FINISH_X+600;
   let x=300; if(d>.25) fence(x,some()); gem(x,1,26); x+=150;
@@ -1524,7 +1525,7 @@ function emit(type,r,arg){
     case 'splash': SFX.splash(); break;
     case 'star': SFX.fanfare(); toast('★ STAR TURBO! ★',true); shake=Math.max(shake,3); break;
     case 'flippy': SFX.combo(3); toast(who+(arg>1?'FLIPPY FLOP ×'+arg+'!':'FLIPPY FLOP!')+'  +'+CONFIG.flip.gems*arg+' ◆'); cheerT=1.4; break;
-    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,CONFIG.star.item); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!'}[arg]); cheerT=1.2; break;
+    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,CONFIG.star.item); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!',sight:'SPARKLE SIGHT! SEE EVERY LANDING'}[arg]); cheerT=1.2; break;
     case 'combo': SFX.combo(arg.n); toast(who+'COMBO ×'+arg.n+'  +'+arg.bonus+' ◆'); cheerT=1.6; break;
   }
 }
@@ -1563,7 +1564,7 @@ function stepRacer(r,inp,dt,live){
   const P=r.P;
   r.prevX=r.x; const prevAlt=r.alt;
   r.laneY += Math.sign(r.lane-r.laneY)*Math.min(Math.abs(r.lane-r.laneY), dt*9*WR.lane);
-  if(r.smashCD>0) r.smashCD-=dt; if(r.swimCD>0) r.swimCD-=dt;
+  if(r.smashCD>0) r.smashCD-=dt; if(r.swimCD>0) r.swimCD-=dt; if(r.sightT>0) r.sightT-=dt;
   if(r.starT>0){ r.starT-=dt; r.rainbow=Math.max(r.rainbow,.25);
     if(Math.random()<.9) particles.push({x:r.x-12+Math.random()*8,y:ry(r)-6-Math.random()*18,vx:-50-Math.random()*50,vy:-15+Math.random()*30,life:.5,c:['#ffd76a','#fff4a8','#ffffff','#ffb347'][(Math.random()*4)|0],shape:'star',g:0}); }
   if(r.flipT>0 && r.state==='air'){ const st=Math.min(dt,r.flipT); r.flipA=(r.flipA||0)+Math.PI*2*st/CONFIG.flip.time; r.flipT-=st; if(r.flipT<=0){ r.flips=(r.flips||0)+1; r.flipA=0; if(r.isPlayer&&!demo) SFX.smooth(); } }
@@ -1704,6 +1705,7 @@ function collect(r,dt){
       o.taken=true;
       if(o.type==='shield') r.shield=true;
       else if(o.type==='magnet') r.magnetT=CONFIG.items.magnetTime;
+      else if(o.type==='sight') r.sightT=CONFIG.items.sightTime;
       else { r.superT=CONFIG.items.superTime; r.rainbow=Math.max(r.rainbow,CONFIG.items.superTime); }
       emit('item',r,o.type);
     }
@@ -2007,7 +2009,7 @@ function renderView(focus,cam,y0){
     else drawRacer(it.r,cx);
   }
   for(const p of particles) drawParticle(p,cx);
-  if(!twoP && !demo && focus.isPlayer && focus.state==='air' && focus.alt-heightAt(focus.x)>26) drawTrajectory(focus,cx);
+  if(!twoP && !demo && focus.isPlayer && focus.state==='air' && (focus.alt-heightAt(focus.x)>26 || focus.sightT>0)) drawTrajectory(focus,cx);
   // combo counter over the pony
   for(const r of players) if(r.combo>=2 && r.state==='air'){ pixelText('×'+r.combo, Math.round(r.x-cx), Math.round(ry(r))-36); }
   renderForeground(cam.x);
@@ -2127,19 +2129,36 @@ function renderPhoto(){
   pixelText(ponyName(photo.kind),160,22,'#fff6fb');
 }
 
-// dotted guide while flying: white = where you'll land, pink = where you'd land if you dive right now
+// glowing landing guide while flying: pink sparkle path = where you'll land, lilac = where you'd land if you dive now.
+// SPARKLE SIGHT power-up: rainbow, longer, on every hop, with a comet racing along it. STAR TURBO: gold
 function drawTrajectory(r,cx){
-  const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1;   // chunkier dots when zoomed way out
-  const sim=(dive,col)=>{ let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
-    for(let i=0;i<180;i++){
+  const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1, sight=r.sightT>0, gold=r.starT>0;
+  const sim=dive=>{ const pts=[]; let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
+    for(let i=0;i<(sight?240:180);i++){
       if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*WR.grav*dt;
       const pa=a; x+=vx*dt; a+=vz*dt; let g=heightAt(x);
       for(const c of clouds) if(vz<0 && pa>=c.h && a<=c.h && x>=c.x && x<=c.x+c.len){ g=c.h; break; }
-      if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; const X=(dx,dy,w,h)=>ctx.fillRect(sx+dx*m,sy+dy*m,w*m,h*m);
-        X(-2,-2,1,1); X(2,-2,1,1); X(-1,-1,3,1); X(0,-1,1,1); X(-2,0,1,1); X(2,0,1,1); return; }
-      if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2*m,2*m); }
-    } };
-  ctx.globalAlpha=.9; sim(false,'#ffffff'); if(!r.dive) sim(true,'#ff6fae'); ctx.globalAlpha=1;
+      if(a<=g){ pts.push([x,g,true]); return pts; }
+      pts.push([x,a,false]); }
+    return pts; };
+  const draw=(pts,dive)=>{ if(pts.length<2) return; const n=pts.length;
+    const hue=i=>gold?`hsl(${44+8*Math.sin(t*8+i*.3)},100%,${64+12*Math.sin(t*10+i*.5)}%)`:sight?`hsl(${(i*14-t*240)%360+360},95%,72%)`:dive?'#c9a6ff':'#ff6fae';
+    const glow=gold?'rgba(255,215,106,.32)':sight?'rgba(255,255,255,.3)':dive?'rgba(201,166,255,.28)':'rgba(255,111,174,.32)';
+    // soft glow
+    ctx.fillStyle=glow; for(let i=2;i<n;i+=2){ const [x,a]=pts[i]; const R=(sight?3:2)*m; ctx.fillRect(Math.round(x-cx)-R,Math.round(base-a)-R+1,R*2,R*2-2); ctx.fillRect(Math.round(x-cx)-R+1,Math.round(base-a)-R,R*2-2,R*2); }
+    // shiny dots that shimmer
+    for(let i=2;i<n;i+=2){ const [x,a]=pts[i], sx=Math.round(x-cx), sy=Math.round(base-a), tw=((t*12+i)|0)%6===0;
+      ctx.fillStyle=tw?'#ffffff':hue(i); ctx.fillRect(sx,sy,2*m,2*m); if(tw||sight&&i%6===0){ ctx.fillStyle='#ffffff'; ctx.fillRect(sx-m,sy+m/2|0,4*m,m); ctx.fillRect(sx+m/2|0,sy-m,m,4*m); } }
+    // a little comet zooming along the path
+    if(!dive){ const k=Math.floor((t*(sight?60:35))%n), [x,a]=pts[k], sx=Math.round(x-cx), sy=Math.round(base-a);
+      ctx.fillStyle='#ffffff'; ctx.fillRect(sx-2*m,sy,5*m,m); ctx.fillRect(sx,sy-2*m,m,5*m); ctx.fillStyle=hue(k); ctx.fillRect(sx-m,sy-m,3*m,3*m); ctx.fillStyle='#ffffff'; ctx.fillRect(sx,sy,m,m); }
+    // landing spot: a pulsing heart (or a lilac ring for the dive)
+    const [lx,la,hit]=pts[n-1]; if(!hit) return; const sx=Math.round(lx-cx), sy=Math.round(base-la), pz=1+((t*4|0)%2), s=m*(dive?1:pz);
+    if(dive){ ctx.fillStyle='#c9a6ff'; ctx.fillRect(sx-2*s,sy-s,s,s); ctx.fillRect(sx+2*s,sy-s,s,s); ctx.fillRect(sx-s,sy-2*s,3*s,s); ctx.fillRect(sx-s,sy,3*s,s); return; }
+    ctx.fillStyle='rgba(255,111,174,.35)'; ctx.fillRect(sx-4*s,sy-5*s,9*s,7*s);
+    ctx.fillStyle=gold?'#ffd76a':'#ff3f96'; ctx.fillRect(sx-2*s,sy-4*s,2*s,s); ctx.fillRect(sx+s,sy-4*s,2*s,s); ctx.fillRect(sx-3*s,sy-3*s,7*s,2*s); ctx.fillRect(sx-2*s,sy-s,5*s,s); ctx.fillRect(sx-s,sy,3*s,s);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(sx-2*s,sy-3*s,s,s); };
+  ctx.save(); ctx.globalAlpha=.95; if(!r.dive) draw(sim(true),true); draw(sim(false),false); ctx.restore();
 }
 
 /* ---------------- Boss cutscene: you and the boss become friends with a big high five ---------------- */
@@ -2552,6 +2571,7 @@ function updateHud(dt){
   let chips=''; if(p.shield) chips+='<span class="chip shield">SHIELD</span>';
   if(p.magnetT>0) chips+='<span class="chip magnet">MAGNET '+Math.ceil(p.magnetT)+'</span>';
   if(p.superT>0) chips+='<span class="chip super">SUPER '+Math.ceil(p.superT)+'</span>';
+  if(p.sightT>0) chips+='<span class="chip magnet">✦ SIGHT '+Math.ceil(p.sightT)+'</span>';
   if(p.starT>0) chips+='<span class="chip super">★ STAR '+Math.ceil(p.starT)+'</span>';
   if(pwrEl.innerHTML!==chips) pwrEl.innerHTML=chips;
   for(const [r,d] of dots) d.style.left=(clamp((r.x-START_X)/(FINISH_X-START_X),0,1)*100).toFixed(1)+'%';

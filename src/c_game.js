@@ -118,7 +118,7 @@ function emit(type,r,arg){
     case 'splash': SFX.splash(); break;
     case 'star': SFX.fanfare(); toast('★ STAR TURBO! ★',true); shake=Math.max(shake,3); break;
     case 'flippy': SFX.combo(3); toast(who+(arg>1?'FLIPPY FLOP ×'+arg+'!':'FLIPPY FLOP!')+'  +'+CONFIG.flip.gems*arg+' ◆'); cheerT=1.4; break;
-    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,CONFIG.star.item); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!'}[arg]); cheerT=1.2; break;
+    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,CONFIG.star.item); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!',sight:'SPARKLE SIGHT! SEE EVERY LANDING'}[arg]); cheerT=1.2; break;
     case 'combo': SFX.combo(arg.n); toast(who+'COMBO ×'+arg.n+'  +'+arg.bonus+' ◆'); cheerT=1.6; break;
   }
 }
@@ -157,7 +157,7 @@ function stepRacer(r,inp,dt,live){
   const P=r.P;
   r.prevX=r.x; const prevAlt=r.alt;
   r.laneY += Math.sign(r.lane-r.laneY)*Math.min(Math.abs(r.lane-r.laneY), dt*9*WR.lane);
-  if(r.smashCD>0) r.smashCD-=dt; if(r.swimCD>0) r.swimCD-=dt;
+  if(r.smashCD>0) r.smashCD-=dt; if(r.swimCD>0) r.swimCD-=dt; if(r.sightT>0) r.sightT-=dt;
   if(r.starT>0){ r.starT-=dt; r.rainbow=Math.max(r.rainbow,.25);
     if(Math.random()<.9) particles.push({x:r.x-12+Math.random()*8,y:ry(r)-6-Math.random()*18,vx:-50-Math.random()*50,vy:-15+Math.random()*30,life:.5,c:['#ffd76a','#fff4a8','#ffffff','#ffb347'][(Math.random()*4)|0],shape:'star',g:0}); }
   if(r.flipT>0 && r.state==='air'){ const st=Math.min(dt,r.flipT); r.flipA=(r.flipA||0)+Math.PI*2*st/CONFIG.flip.time; r.flipT-=st; if(r.flipT<=0){ r.flips=(r.flips||0)+1; r.flipA=0; if(r.isPlayer&&!demo) SFX.smooth(); } }
@@ -298,6 +298,7 @@ function collect(r,dt){
       o.taken=true;
       if(o.type==='shield') r.shield=true;
       else if(o.type==='magnet') r.magnetT=CONFIG.items.magnetTime;
+      else if(o.type==='sight') r.sightT=CONFIG.items.sightTime;
       else { r.superT=CONFIG.items.superTime; r.rainbow=Math.max(r.rainbow,CONFIG.items.superTime); }
       emit('item',r,o.type);
     }

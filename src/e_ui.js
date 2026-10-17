@@ -38,6 +38,7 @@ function updateHud(dt){
   let chips=''; if(p.shield) chips+='<span class="chip shield">SHIELD</span>';
   if(p.magnetT>0) chips+='<span class="chip magnet">MAGNET '+Math.ceil(p.magnetT)+'</span>';
   if(p.superT>0) chips+='<span class="chip super">SUPER '+Math.ceil(p.superT)+'</span>';
+  if(p.sightT>0) chips+='<span class="chip magnet">✦ SIGHT '+Math.ceil(p.sightT)+'</span>';
   if(p.starT>0) chips+='<span class="chip super">★ STAR '+Math.ceil(p.starT)+'</span>';
   if(pwrEl.innerHTML!==chips) pwrEl.innerHTML=chips;
   for(const [r,d] of dots) d.style.left=(clamp((r.x-START_X)/(FINISH_X-START_X),0,1)*100).toFixed(1)+'%';
