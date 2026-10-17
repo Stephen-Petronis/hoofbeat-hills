@@ -94,36 +94,62 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .pl2{display:flex;align-items:center;gap:12px}
 .lanes{display:grid;gap:6px}
 .lanes.one{gap:12px;flex:0 1 240px;min-width:0}
-/* juicy lane buttons: domed toward the direction they move you */
-.lanes.one button{position:relative;width:100%;height:calc(var(--k)*1.45);border:0;color:var(--plum);
-  background:linear-gradient(#f1ebff,#d4c2ff 55%,#a98ee8);
-  box-shadow:0 0 0 3px var(--plum),0 7px 0 3px var(--plum),inset 0 5px 0 rgba(255,255,255,.6),inset 0 -7px 0 rgba(58,35,80,.2)}
-.lanes.one .lane-up{border-radius:50% 50% 22px 22px / 62% 62% 22px 22px}
-.lanes.one .lane-dn{border-radius:22px 22px 50% 50% / 22px 22px 62% 62%}
-.lanes.one button.on{transform:translateY(5px) scale(.98);box-shadow:0 0 0 3px var(--plum),0 2px 0 3px var(--plum),inset 0 5px 0 rgba(255,255,255,.6),inset 0 -4px 0 rgba(58,35,80,.2)}
-.lanes.one svg{width:44%;max-width:84px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 0 rgba(58,35,80,.35))}
+/* ---------- JELLY buttons: squishy, glossy, see-through candy like a 90s handheld ---------- */
+.lanes.one button,#pad .jump1,#pad .power1{transition:transform .38s cubic-bezier(.25,1.9,.45,1),box-shadow .2s}
+.lanes.one button.on,#pad .jump1.on,#pad .power1.on{transition-duration:.06s}
+.lanes.one button{position:relative;width:100%;height:calc(var(--k)*1.45);border:0;color:var(--plum);overflow:hidden;
+  background:radial-gradient(ellipse 60% 45% at 50% 78%,rgba(255,236,255,.75),transparent 70%),
+             linear-gradient(180deg,#efe6ff 0%,#c9b2ff 38%,#a585f5 72%,#8a66e6 100%);
+  box-shadow:0 0 0 3px var(--plum),0 8px 0 0 #7a58cf,0 8px 0 3px var(--plum),0 14px 12px 2px rgba(10,0,25,.45),
+    inset 0 -12px 18px rgba(80,30,170,.45),inset 0 3px 4px rgba(255,255,255,.9),inset 0 0 0 2px rgba(255,255,255,.35)}
+.lanes.one .lane-up{border-radius:50% 50% 24px 24px / 64% 64% 24px 24px}
+.lanes.one .lane-dn{border-radius:24px 24px 50% 50% / 24px 24px 64% 64%}
+.lanes.one button::before{content:"";position:absolute;left:10%;right:10%;top:5%;height:36%;border-radius:50% 50% 45% 45% / 90% 90% 30% 30%;pointer-events:none;
+  background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.15))}
+.lanes.one .lane-dn::before{top:6%;height:30%;border-radius:20px 20px 50% 50% / 20px 20px 60% 60%}
+.lanes.one button::after{content:"";position:absolute;right:13%;bottom:16%;width:9px;height:6px;border-radius:50%;background:rgba(255,255,255,.85);transform:rotate(-25deg);pointer-events:none}
+.lanes.one button.on{transform:translateY(7px) scale(1.04,.9);
+  box-shadow:0 0 0 3px var(--plum),0 1px 0 0 #7a58cf,0 1px 0 3px var(--plum),0 5px 8px 2px rgba(10,0,25,.4),
+    inset 0 -6px 16px rgba(80,30,170,.55),inset 0 3px 4px rgba(255,255,255,.9),inset 0 0 0 2px rgba(255,255,255,.35)}
+.lanes.one svg{position:relative;z-index:1;width:44%;max-width:84px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 0 rgba(58,35,80,.35))}
 .lanes.one svg path{fill:var(--pink);stroke:var(--plum);stroke-width:3.5;stroke-linejoin:round}
-.lanes.one svg .shine{fill:rgba(255,255,255,.7);stroke:none}
-.lanes.one button small{font-size:9px;pointer-events:none}
+.lanes.one svg .shine{fill:rgba(255,255,255,.75);stroke:none}
+.lanes.one button small{position:relative;z-index:1;font-size:9px;pointer-events:none}
 #pad .act1{display:flex;align-items:center;gap:22px}
-/* big juicy drum-style JUMP button with a horse and glitter */
-#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),44vw);height:min(calc(var(--k)*2.8),44vw);border:0;padding:0;color:var(--plum);overflow:visible;
-  background:radial-gradient(circle at 50% 36%,#ffe3f1 0 14%,#ff9fcd 38%,#ff5fa8 64%,#e0458c 76%);
-  box-shadow:0 0 0 6px var(--cream),0 0 0 12px var(--gold),0 0 0 15px var(--plum),0 9px 0 15px var(--plum),inset 0 -12px 0 rgba(58,35,80,.22),inset 0 8px 0 rgba(255,255,255,.35)}
-#pad .jump1::before{content:"";position:absolute;left:18%;top:9%;width:40%;height:20%;border-radius:50%;background:rgba(255,255,255,.55);transform:rotate(-18deg);pointer-events:none}
-#pad .jump1::after{content:"";position:absolute;inset:8%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,#fff 0 1.5px,transparent 2.5px) 12% 30%/22% 26%,radial-gradient(circle,#fff4a8 0 1.5px,transparent 2.5px) 70% 60%/28% 24%,radial-gradient(circle,#fff 0 1px,transparent 2px) 40% 80%/18% 20%;
+/* big JUMP: gold bezel + pink jelly dome, with your horse peeking over the top */
+#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),44vw);height:min(calc(var(--k)*2.8),44vw);margin-top:calc(min(calc(var(--k)*2.8),44vw)*.3);border:0;padding:0;overflow:visible;background:none;box-shadow:none}
+#pad .jump1.on{transform:none;box-shadow:none}
+#pad .jump1 .bezel{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 42%,#fffbe6 0 52%,#ffe48a 60%,#f2b632 70%,#d9961a 72%);
+  box-shadow:0 0 0 3px var(--plum),0 7px 0 3px var(--plum),0 12px 14px 2px rgba(10,0,25,.45),inset 0 3px 0 rgba(255,255,255,.8),inset 0 -5px 0 rgba(140,80,0,.3)}
+#pad .jump1 .head{position:absolute;left:50%;top:-37%;width:44%;height:auto;transform:translateX(-36%);image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;
+  transition:transform .4s cubic-bezier(.25,1.9,.45,1)}
+#pad .jump1.on .head{transform:translateX(-36%) translateY(-16%) rotate(-6deg);transition-duration:.08s}
+#pad .jump1 .dome{position:absolute;inset:11%;border-radius:50%;display:grid;place-items:center;pointer-events:none;overflow:hidden;
+  transition:transform .4s cubic-bezier(.25,1.9,.45,1),box-shadow .2s;
+  background:radial-gradient(circle at 50% 74%,rgba(255,214,236,.85) 0 18%,transparent 52%),
+             radial-gradient(circle at 50% 42%,#ffa3cf 0%,#ff6db1 46%,#f0408f 74%,#c92676 100%);
+  box-shadow:0 0 0 3px var(--plum),0 9px 0 0 #b11f68,0 9px 0 3px var(--plum),
+    inset 0 -16px 24px rgba(140,0,70,.45),inset 0 4px 6px rgba(255,255,255,.85),inset 0 0 0 3px rgba(255,255,255,.3)}
+#pad .jump1.on .dome{transform:translateY(8px) scale(1.05,.9);transition-duration:.06s;
+  box-shadow:0 0 0 3px var(--plum),0 1px 0 0 #b11f68,0 1px 0 3px var(--plum),0 0 26px 10px rgba(255,111,174,.55),
+    inset 0 -8px 22px rgba(140,0,70,.55),inset 0 4px 6px rgba(255,255,255,.85),inset 0 0 0 3px rgba(255,255,255,.3)}
+#pad .jump1 .dome::before{content:"";position:absolute;left:14%;right:14%;top:5%;height:40%;border-radius:50% 50% 45% 45% / 90% 90% 35% 35%;
+  background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.1))}
+#pad .jump1 .dome::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 1.5px,transparent 2.5px) 12% 30%/22% 26%,radial-gradient(circle,#fff4a8 0 1.5px,transparent 2.5px) 70% 60%/28% 24%,radial-gradient(circle,#fff 0 1px,transparent 2px) 40% 80%/18% 20%,
+    radial-gradient(ellipse at 76% 80%,rgba(255,255,255,.9) 0 4%,transparent 6%);
   animation:glitter 1.4s steps(4) infinite}
-@keyframes glitter{0%{background-position:12% 30%,70% 60%,40% 80%;opacity:1}50%{opacity:.4}100%{background-position:20% 18%,58% 72%,52% 68%;opacity:1}}
-#pad .jump1 canvas{width:52%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;margin-top:-6%}
-#pad .jump1 .jl{font-size:12px;letter-spacing:.08em;color:var(--plum);text-shadow:1px 1px 0 #fff4fb;pointer-events:none;margin-top:-4%}
-#pad .jump1.on{transform:translateY(6px) scale(.94);box-shadow:0 0 0 6px var(--cream),0 0 0 12px #fff4a8,0 0 0 15px var(--plum),0 3px 0 15px var(--plum),0 0 24px 18px rgba(255,111,174,.45),inset 0 -6px 0 rgba(58,35,80,.22),inset 0 8px 0 rgba(255,255,255,.35)}
-#pad .power1{border-radius:50%;width:calc(var(--k)*1.4);height:calc(var(--k)*1.4);font-size:11px;border:0;color:var(--plum);
-  background:radial-gradient(circle at 50% 35%,#fff6c8 0 16%,#ffd76a 55%,#e8a91f 78%);
-  box-shadow:0 0 0 4px var(--cream),0 0 0 7px var(--plum),0 6px 0 7px var(--plum),inset 0 -6px 0 rgba(58,35,80,.2)}
-#pad .power1.on{transform:translateY(4px) scale(.95);box-shadow:0 0 0 4px var(--cream),0 0 0 7px var(--plum),0 2px 0 7px var(--plum)}
+@keyframes glitter{0%{background-position:12% 30%,70% 60%,40% 80%,0 0;opacity:1}50%{opacity:.55}100%{background-position:20% 18%,58% 72%,52% 68%,0 0;opacity:1}}
+#pad .jump1 .jl{position:relative;z-index:1;margin-top:14%;font-size:clamp(14px,3.4vw,20px);letter-spacing:.06em;color:#fff;
+  text-shadow:2px 0 0 var(--plum),-2px 0 0 var(--plum),0 2px 0 var(--plum),0 -2px 0 var(--plum),2px 2px 0 var(--plum),-2px 2px 0 var(--plum),2px -2px 0 var(--plum),-2px -2px 0 var(--plum),0 3px 0 var(--plum)}
+#pad .power1{position:relative;overflow:hidden;border-radius:50%;width:calc(var(--k)*1.4);height:calc(var(--k)*1.4);font-size:11px;border:0;color:var(--plum);
+  background:radial-gradient(circle at 50% 74%,rgba(255,250,214,.9) 0 18%,transparent 52%),radial-gradient(circle at 50% 40%,#ffe58f,#ffc93a 55%,#e09a12 90%);
+  box-shadow:0 0 0 3px var(--plum),0 7px 0 0 #b9780a,0 7px 0 3px var(--plum),0 11px 10px 2px rgba(10,0,25,.4),inset 0 -8px 14px rgba(150,80,0,.4),inset 0 3px 4px rgba(255,255,255,.9)}
+#pad .power1::before{content:"";position:absolute;left:16%;right:16%;top:6%;height:38%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.1));pointer-events:none}
+#pad .power1.on{transform:translateY(6px) scale(1.05,.9);box-shadow:0 0 0 3px var(--plum),0 1px 0 0 #b9780a,0 1px 0 3px var(--plum),inset 0 -6px 14px rgba(150,80,0,.5),inset 0 3px 4px rgba(255,255,255,.9)}
 #pad .power1.cool{opacity:.45}
-@media (prefers-reduced-motion:reduce){#pad .jump1::after{animation:none}}
+@media (prefers-reduced-motion:reduce){#pad .jump1 .dome::after{animation:none}}
 .lanes button{width:var(--k);height:var(--k)}.lanes button{width:var(--k);height:var(--k)}
 .pl2.p1 .jb{background:var(--pink);color:var(--plum)}.pl2.p2 .jb{background:var(--mint);color:var(--plum)}
 #keys{display:none;font-family:var(--f-body);font-size:15px;color:var(--lilac);text-align:center;margin:0;max-width:70ch}
@@ -247,7 +273,7 @@ h2{font-family:var(--f-pixel);font-size:clamp(14px,3vw,22px);margin:0;color:var(
       <button data-p="0" data-act="up" class="lane-up" aria-label="Lane up"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg></button>
       <button data-p="0" data-act="down" class="lane-dn" aria-label="Lane down, or dive while in the air"><svg viewBox="0 0 40 30" style="transform:rotate(180deg);filter:drop-shadow(0 -3px 0 rgba(58,35,80,.35))" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg><small>DIVE</small></button>
     </div>
-    <div class="act1"><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button><button data-p="0" data-act="jump" class="jump1" aria-label="Jump"><canvas id="jumpIcon" width="40" height="38"></canvas><span class="jl">JUMP</span></button></div>
+    <div class="act1"><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button><button data-p="0" data-act="jump" class="jump1" aria-label="Jump"><span class="bezel"></span><canvas id="jumpIcon" class="head" width="24" height="26"></canvas><span class="dome"><span class="jl">JUMP</span></span></button></div>
   </div>
   <div id="pad2" class="pad">
     <div class="pl2 p1">
@@ -2111,10 +2137,10 @@ function layout(){
 }
 addEventListener('resize',layout); addEventListener('orientationchange',()=>setTimeout(layout,200));
 
-/* ---------- jump button icon: your horse, mid-leap ---------- */
-function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,40,38);
-  const k=chosen, eq=equipOf(k); x.drawImage(ponySet(k,eq.mane).air,2,5);
-  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,2+h.dx-1,5+h.dy-1); } }
+/* ---------- jump button: your horse's head peeking over the top ---------- */
+function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,24,26);
+  const k=chosen, eq=equipOf(k), ox=-15, oy=6; x.drawImage(ponySet(k,eq.mane).run[0],ox,oy);
+  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,ox+h.dx-1,oy+h.dy-1); } }
 /* ---------- previews ---------- */
 let previews=[];
 function refreshPreviews(){ previews=[...document.querySelectorAll('canvas.pv')].map(c=>{ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; return [c.dataset.k,x]; }); }

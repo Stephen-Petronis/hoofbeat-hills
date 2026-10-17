@@ -282,10 +282,10 @@ function layout(){
 }
 addEventListener('resize',layout); addEventListener('orientationchange',()=>setTimeout(layout,200));
 
-/* ---------- jump button icon: your horse, mid-leap ---------- */
-function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,40,38);
-  const k=chosen, eq=equipOf(k); x.drawImage(ponySet(k,eq.mane).air,2,5);
-  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,2+h.dx-1,5+h.dy-1); } }
+/* ---------- jump button: your horse's head peeking over the top ---------- */
+function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,24,26);
+  const k=chosen, eq=equipOf(k), ox=-15, oy=6; x.drawImage(ponySet(k,eq.mane).run[0],ox,oy);
+  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,ox+h.dx-1,oy+h.dy-1); } }
 /* ---------- previews ---------- */
 let previews=[];
 function refreshPreviews(){ previews=[...document.querySelectorAll('canvas.pv')].map(c=>{ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; return [c.dataset.k,x]; }); }
