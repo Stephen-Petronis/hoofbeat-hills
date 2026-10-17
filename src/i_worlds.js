@@ -13,7 +13,7 @@ const RULES = {
   hot:      { top:1.08, jump:1.12, tip:'HOT HOT HOOVES! EXTRA SPEED + BIG HOPS' },
   neon:     { top:1.06, tip:'NEON NIGHTS!' },
   space:    { grav:.33, jump:.8, tip:'SPACE! FLOAT FOREVER' },
-  mirror:   { mirror:true, tip:'MIRROR WORLD! UP IS DOWN!' },
+  mirror:   { mirror:true, flipEvery:8, flipTime:4, invert:true, tip:'SILVER MIRROR! UP IS DOWN... AND IT FLIPS INSIDE OUT!' },
   ice:      { accel:.55, coast:.35, lane:.5, tip:'SLIPPERY ICE! WHEEEE' },
   rainbow:  { flipEvery:9, flipTime:4.5, tip:'RAINBOW ROAD! WATCH FOR FLIPS' },
   spiders:  { tip:'SILLY SPIDERS! DON\'T GET TICKLED' },
@@ -74,6 +74,7 @@ const HURDLE_SPR = {
   iceblock:makeSprite(13,12,['#c8ecff','#e8f8ff','#ffffff'],x=>{ x.fillStyle='#c8ecff'; x.fillRect(.5,1.5,12,10.5); x.fillStyle='#e8f8ff'; x.fillRect(1.5,2.5,5,5); }, x=>{ x.fillStyle='#ffffff'; x.fillRect(2,3,2,1); x.fillRect(2,4,1,1); x.fillStyle='#8fc8ea'; x.fillRect(8,7,3,1); }, '#4a7aa0'),
   wall:    makeSprite(14,12,['#d8cee6','#b8aed0'],x=>{ x.fillStyle='#d8cee6'; x.fillRect(.5,3,13,9); x.fillRect(.5,.5,3,3); x.fillRect(5.5,.5,3,3); x.fillRect(10.5,.5,3,3); }, x=>{ x.fillStyle='#968ab4'; for(let y=5;y<12;y+=3) x.fillRect(1,y,12,1); x.fillRect(5,6,1,2); x.fillRect(9,9,1,2); }, '#5a4e7a'),
   crystal: crystalSpr('#c9b3ff',11,13),
+  chrome:  makeSprite(13,13,['#ffffff','#c3cada','#7e889f'],x=>{ poly(x,'#c3cada',[6.5,.5,12.5,6.5,6.5,12.5,.5,6.5]); poly(x,'#ffffff',[6.5,.5,9.5,6.5,6.5,9,3.5,6.5]); poly(x,'#7e889f',[6.5,12.5,12.5,6.5,9.5,6.5,6.5,9]); }, x=>{ x.fillStyle='#9ae8ff'; x.fillRect(6,3,1,1); }, '#262c3c'),
   building:cityBlock(13,15,'#c98a6a','#ffe8a0'),
   candy:   makeSprite(12,15,['#ffffff','#ff4f6f'],x=>{ x.fillStyle='#ffffff'; x.fillRect(1.5,4,2.4,11); x.fillRect(8.3,4,2.4,11); x.fillRect(1.5,6,9,2.4); x.beginPath(); x.arc(4.5,4,3,Math.PI,0); x.lineWidth=2.4; x.strokeStyle='#ffffff'; x.stroke(); },
              x=>{ x.fillStyle='#ff4f6f'; for(let y=5;y<15;y+=3){ x.fillRect(2,y,2,1); x.fillRect(9,y,2,1); } x.fillRect(4,6,1,2); x.fillRect(7,6,1,2); }),
@@ -138,12 +139,14 @@ const NEW_WORLDS = {
       s.fillStyle='#b8ecff'; for(let dy=-11;dy<=-4;dy++){ const hw=Math.floor(Math.sqrt(121-dy*dy)); s.fillRect(px-hw,py+dy,hw,1); }
       s.fillStyle='#fff4a8'; for(let a=0;a<Math.PI*2;a+=.02){ const x=Math.round(px+Math.cos(a)*19), y=Math.round(py+Math.sin(a)*4.5-Math.cos(a)*2); if(Math.sin(a)<0 && Math.abs(x-px)<11 && Math.abs(y-py)<11) continue; s.fillRect(x,y,1,1); }
       s.fillStyle='#e6e4f6'; for(let dy=-4;dy<=4;dy++){ const hw=Math.floor(Math.sqrt(16-dy*dy)); s.fillRect(150-hw,24+dy,hw*2,1); } } },
-  mirror:{ name:'Mirror Lake', style:'classic', music:'dreamy', rule:'mirror', hurdle:'crystal', bramble:'shard', fx:'reflect',
-    sky:r6('#9fb2e8','#adbdec','#bcc8f0','#cbd4f3','#dbe0f6','#ebedfa'), orbCol:['#ffffff','#f0f2ff','#e0e6ff'],
-    far:['#c0c8ee','#a2acd8'], mid:['#b8e0f0','#98c8e0'], hedge:['#9fa8e0','#5a62a0','#ffffff'],
-    rib:{lit:'#e6ecff',base:'#d4dcf6',shade:'#bec8ee',edge:'#ffffff',dark:'#7f8ac0',dash:'#f0f4ff',face:'#a8b4e6',face2:'#94a0d6'},
-    fg:['#7f8ac0','#8f9ad0','#6a74ac','#454e80'], trees:['#e0e6ff','#ffc2e3','#c9f0ff'],
-    bigMk:()=>[crystalSpr('#e0e6ff',18,28),crystalSpr('#ffc2e3',16,26),crystalSpr('#c9f0ff',20,28)] },
+  mirror:{ name:'Silver Mirror', style:'classic', music:'funk', rule:'mirror', hurdle:'chrome', bramble:'shard', fx:'chrome', noCastle:true,
+    sky:r6('#3c4256','#555d74','#727b94','#939cb4','#b6bdd0','#dce1ec'), orbCol:['#ffffff','#eef1f8','#cfd6e6'],
+    far:['#9aa3ba','#6c7590'], mid:['#c3cada','#8f99b2'], hedge:['#a8b1c8','#3c4458','#ffffff'],
+    rib:{lit:'#ffffff',base:'#dfe4ee',shade:'#b7bfd0',edge:'#ffffff',dark:'#5c6680',dash:'#9ae8ff',face:'#7e889f',face2:'#aab3c8'},
+    fg:['#5c6680','#7e889f','#48516a','#262c3c'], trees:['#e8ecf4','#c3cada','#9ae8ff'],
+    farFn:wx=>Math.round(104-Math.min(52,64*triw(wx*.006))-6*triw(wx*.04)), capCol:'#ffffff', capY:62,
+    treesMk:()=>[crystalSpr('#e8ecf4',12,22),crystalSpr('#9ae8ff',12,20),crystalSpr('#c3cada',14,22)], bigMk:()=>[crystalSpr('#ffffff',18,30),crystalSpr('#9ae8ff',20,28),crystalSpr('#c3cada',18,30)],
+    skyFx:s=>{ s.fillStyle='rgba(255,255,255,.22)'; for(let k=0;k<5;k++){ s.beginPath(); s.moveTo(k*80-40,0); s.lineTo(k*80-10,0); s.lineTo(k*80+60,180); s.lineTo(k*80+30,180); s.fill(); } } },
   ice:{ name:'Frosty Peaks', style:'mountains', music:'dreamy', rule:'ice', hurdle:'iceblock', bramble:'icicle', fx:'snow', peaks:true,
     sky:r6('#7fa8e8','#93b8ee','#a8c8f2','#bed6f6','#d4e4f9','#eaf2fc'), orbCol:['#ffffff','#f4f8ff','#e4eeff'],
     far:['#eef4ff','#c8d8f2'], mid:['#e0eef8','#c0d8ec'], hedge:['#bfe0f0','#5a8ab0','#ffffff'],
@@ -252,6 +255,14 @@ function worldFx(layer,camX){
     ctx.globalAlpha=1;
     for(let i=0;i<2;i++){ const cyc=3+i, u=((t+i*1.4)%cyc)/cyc; if(u>.3) continue; const k=u/.3, h=hash(Math.floor((t+i*1.4)/cyc)*7+i), x=Math.round(30+h%260+k*60), y=Math.round(8+(h>>>8)%40+k*24);
       ctx.fillStyle='#fff4a8'; ctx.fillRect(x-1,y,3,1); ctx.fillRect(x,y-1,1,3); for(let j=1;j<8;j++){ ctx.fillStyle=cols[j%6]; ctx.fillRect(x-j*2,y-j,2,1); } }
+  }
+  else if(fx==='chrome'){
+    if(layer==='back'){ const farX=camX*.15; ctx.globalAlpha=.4;
+      for(let sx=0;sx<W;sx++){ const wx=sx+farX, y=Math.round(104-Math.min(52,64*triw(wx*.006))-6*triw(wx*.04)), hgt=Math.round((110-y)*.8); ctx.fillStyle=TH.far[1]; ctx.fillRect(sx,0,1,hgt); }
+      ctx.globalAlpha=1; }
+    else { const u=((t*.35)%1.6)-.3, x0=Math.round(u*W*1.4); ctx.globalAlpha=.22; ctx.fillStyle='#ffffff';
+      ctx.beginPath(); ctx.moveTo(x0,0); ctx.lineTo(x0+W*.12,0); ctx.lineTo(x0-W*.18,H); ctx.lineTo(x0-W*.3,H); ctx.fill(); ctx.globalAlpha=1;
+      for(let i=0;i<10;i++){ const h=hash(i*61+((t*2)|0)*7); if((h>>>4)%3) continue; const x=h%W, y=(h>>>9)%H; ctx.fillStyle='#ffffff'; ctx.fillRect(x-2,y,5,1); ctx.fillRect(x,y-2,1,5); ctx.fillStyle='#9ae8ff'; ctx.fillRect(x,y,1,1); } }
   }
   else if(fx==='reflect' && layer==='back'){
     // the sky is a mirror: the far hills hang upside down from the top

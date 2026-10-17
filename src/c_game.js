@@ -15,7 +15,7 @@ const fabI=()=>fabT<=0?0:Math.min(1,fabIn,fabT/CONFIG.fab.fade);
 let fabKind='rainbow';
 function startFab(kind='rainbow',time=CONFIG.fab.time){ const was=fabT>0; fabKind=kind; fabT=Math.max(fabT,time); if(!was){ fabIn=0; SFX.fab(); if(!muted) Music.fab(true); } }
 // view flip (Backwards Bay, Rainbow Road flips) and swapped up/down (Mirror Lake, during rainbow flips)
-let flipV=1, flipTarget=1, rbClock=0, rbWarned=false;
+let flipV=1, flipTarget=1, rbClock=0, rbWarned=false, invOn=false;
 const controlsSwapped=()=>!!(WR.mirror || (WR.flipEvery && flipTarget<0));
 const textBackwards=()=>['countdown','race','finish'].includes(mode) && !demo && !twoP && (WR.backwards || (WR.flipEvery && flipTarget<0));
 // STAR TURBO meter
@@ -357,10 +357,11 @@ function update(dt){
   } else for(const I of INP){ I.lanes.length=0; I.tap=false; I.stap=false; }
   // Rainbow Road: every so often the world flips around (and so do up/down)
   if(!demo && !twoP && WR.flipEvery && mode==='race'){ rbClock+=dt; const cyc=WR.flipEvery+WR.flipTime, ph=rbClock%cyc;
-    if(ph>WR.flipEvery-1.3 && ph<WR.flipEvery && !rbWarned){ rbWarned=true; SFX.warn(); toast('RAINBOW FLIP!'); } if(ph<1) rbWarned=false;
+    if(ph>WR.flipEvery-1.3 && ph<WR.flipEvery && !rbWarned){ rbWarned=true; SFX.warn(); toast(WR.invert?'MIRROR FLIP!':'RAINBOW FLIP!'); } if(ph<1) rbWarned=false;
     flipTarget=ph>WR.flipEvery?-1:1; }
   else flipTarget=(!demo && !twoP && WR.backwards && mode!=='title')?-1:1;
   flipV+=clamp(flipTarget-flipV,-dt*5,dt*5);
+  { const inv=!!(WR.invert && flipTarget<0 && !demo); if(inv!==invOn){ invOn=inv; cv.classList.toggle('inv',inv); if(inv){ shake=Math.max(shake,2); SFX.ghost(); } } }
   if(spiders.length && live) stepSpiders(dt);
   const [lo,hi]=CONFIG.rubberBand, lead=Math.max(...players.map(p=>p.x));
   for(const r of racers){
@@ -425,7 +426,7 @@ function update(dt){
     const headY=ry(p)-30;
     if(z<.97){
       // zoomed out: frame the horse AND the ground under her, so kids can see where they'll come down
-      const h=180/z, extra=h-180; let gl=heightAt(p.x+p.vx*.4); for(let k=1;k<=8;k++) gl=Math.min(gl,heightAt(p.x+k*45/z)); const gY=laneY(p.laneY)-gl;
+      const h=(twoP?180:VH)/z, extra=h-180; let gl=heightAt(p.x+p.vx*.4); for(let k=1;k<=8;k++) gl=Math.min(gl,heightAt(p.x+k*45/z)); const gY=laneY(p.laneY)-gl;
       const want=Math.max(0,Math.max(h-30-gY,24-headY)-extra);
       c.y+=(want-c.y)*Math.min(1,dt*5);
       if(headY+c.y+extra<8) c.y=8-headY-extra;

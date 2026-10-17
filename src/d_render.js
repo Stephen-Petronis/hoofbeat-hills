@@ -1,11 +1,12 @@
 
 /* ---------------- Render ---------------- */
 function setCanvasMode(two){
-  const h=two?360:180; document.body.classList.toggle('two',two);
+  const h=two?360:(VH===360?180:VH); document.body.classList.toggle('two',two);
   if(cv.height!==h){ cv.height=h; VH=h; ctx.imageSmoothingEnabled=false; layout(); }
 }
-function renderBackground(camX,cy){
-  const T=TH, A=AS;
+let viewDy=0;   // extra sky added above the normal 180px view (tall screens + zoom). Parallax layers stay anchored to the ground
+function renderBackground(camX,cy0){
+  const T=TH, A=AS, cy=cy0-viewDy;
   ctx.drawImage(A.sky,0,0,W,H);
   if(!T.night) for(let i=0;i<4;i++){ const span=W+80; let x=((i*97+30 - camX*.06 - t*4)%span+span)%span-40; ctx.drawImage(cloudSpr,Math.round(x),18+((i*37)%30)+Math.round(cy*.2)); }
   for(let i=0;i<(T.night?16:7);i++){ const span=W+40, dir=i%2?1:-1;
@@ -21,7 +22,7 @@ function renderBackground(camX,cy){
       ctx.fillStyle='#ffffff'; if(((t*14)|0)%2){ ctx.fillRect(xi-1,y-1,1,1); ctx.fillRect(xi+2,y-1,1,1); } else { ctx.fillRect(xi-1,y,1,1); ctx.fillRect(xi+2,y,1,1); }
       if(((t*6+i)|0)%3===0){ ctx.fillStyle='#fff6fb'; ctx.fillRect(xi-3*dir,y+2,1,1); } }
   }
-  const fy=Math.round(cy*.3), farX=camX*.15;
+  const fy=Math.round(cy*.3)+viewDy, farX=camX*.15;
   const triw=u=>1-2*Math.abs(u-Math.floor(u)-.5);
   const farY=T.farFn ? T.farFn : wx=>T.peaks ? Math.round(102-30*triw(wx*.008)-7*triw(wx*.027+.3)) : Math.round(92-15*(.55+.45*Math.sin(wx*.011))-7*Math.sin(wx*.027+2));
   for(let sx=0;sx<W;sx++){ const y=farY(sx+farX)+fy; ctx.fillStyle=T.far[0]; ctx.fillRect(sx,y,1,1); ctx.fillStyle=T.far[1]; ctx.fillRect(sx,y+1,1,H-y);
@@ -30,13 +31,13 @@ function renderBackground(camX,cy){
     if(T.city){ const wx=Math.floor(sx+farX), b=Math.floor(wx/18), c=wx-b*18; if(c>=3 && c<=15 && c%3===1) for(let yy=y+4;yy<H;yy+=5){ const q=hash(b*97+yy*3+c); if(q%3===0){ ctx.fillStyle=T.win[q%T.win.length]; ctx.fillRect(sx,yy,1,2); } } } }
   const CE=T.castleEvery||700;
   if(!T.noCastle) for(let k=Math.floor(farX/CE)-1;k<=Math.floor((farX+W)/CE)+1;k++){ const wx=k*CE+260; ctx.drawImage(A.castle,Math.round(wx-farX)-17,farY(wx)+fy-27); }
-  const my=Math.round(cy*.5), mwx=camX*.35;
+  const my=Math.round(cy*.5)+viewDy, mwx=camX*.35;
   const midY=wx=>Math.round(113-14*Math.max(0,Math.sin(wx*.016))-6*(.5+.5*Math.sin(wx*.041+1)));
   for(let sx=0;sx<W;sx++){ const y=midY(sx+mwx)+my; ctx.fillStyle=T.mid[0]; ctx.fillRect(sx,y,1,1); ctx.fillStyle=T.mid[1]; ctx.fillRect(sx,y+1,1,H-y); }
   for(let i=Math.floor(mwx/58)-1;i<=Math.floor((mwx+W)/58)+1;i++){ const h=hash(i+999); if(h%3===0) continue; const tx=i*58+(h%30);
     if(h%7===1) ctx.drawImage(T.spooky?pumpkinLit:houseSpr[h%2],Math.round(tx-mwx-9),midY(tx)+my-(T.spooky?11:15));
     else ctx.drawImage(A.trees[h%3],Math.round(tx-mwx-8),midY(tx)+my-21); }
-  const hwx=camX*.7, hy=Math.round(cy*.8);
+  const hwx=camX*.7, hy=Math.round(cy*.8)+viewDy;
   for(let i=Math.floor(hwx/90)-1;i<=Math.floor((hwx+W)/90)+1;i++){ const h=hash(i+4242); if(h%3) continue; ctx.drawImage(A.big[h%3],Math.round(i*90+(h%40)-hwx),94+hy); }
   for(let i=Math.floor(hwx/17)-1;i<=Math.floor((hwx+W)/17)+1;i++){ ctx.drawImage(A.hedge,Math.round(i*17-hwx),111+(hash(i)%3)+hy); }
 }
@@ -96,7 +97,10 @@ function renderView(focus,cam,y0){
   for(let sx=0;sx<W;sx++){
     const wx=cx+sx, h=Math.round(heightAt(wx)), s=slopeAt(wx), top=BAND_TOP-h, bot=BAND_BOT-h;
     if(h>0){ ctx.fillStyle=RIB.face; ctx.fillRect(sx,bot,1,h); ctx.fillStyle=RIB.face2; ctx.fillRect(sx,bot,1,Math.min(2,h));
-      for(let y=bot+3;y<BAND_BOT;y++){ const q=hash(wx*131+y*7)%(y-bot<30?31:140); if(h>36 && (y-bot+(hash(wx>>3)%7))%18===9){ctx.fillStyle=RIB.face2;ctx.fillRect(sx,y,1,1);} else if(q===0){ctx.fillStyle=TH.hedge[2];ctx.fillRect(sx,y,1,1);} else if(q===1){ctx.fillStyle='#fff6fb';ctx.fillRect(sx,y,1,1);} else if(q===2){ctx.fillStyle='#c9a6ff';ctx.fillRect(sx,y,1,1);} } }
+      const near=Math.min(BAND_BOT,bot+30), sc=['','#fff6fb','#c9a6ff'];
+      for(let y=bot+3;y<near;y++){ const q=hash(wx*131+y*7)%31; if(q<3){ ctx.fillStyle=q===0?TH.hedge[2]:sc[q]; ctx.fillRect(sx,y,1,1); } }
+      if(h>36){ const off=hash(wx>>3)%7; ctx.fillStyle=RIB.face2; for(let y=bot+(((9-off)%18)+18)%18;y<BAND_BOT;y+=18) if(y>=bot+3) ctx.fillRect(sx,y,1,1); }
+      const deep=BAND_BOT-near; if(deep>40){ for(let j=0,n=(deep/45)|0;j<n;j++){ const q=hash(wx*131+j*7919); ctx.fillStyle=q%3===0?TH.hedge[2]:sc[1+q%2]; ctx.fillRect(sx,near+q%deep,1,1); } } }
     ctx.fillStyle = s>0.28?RIB.lit : s<-0.28?RIB.shade : RIB.base; ctx.fillRect(sx,top,1,bot-top);
     ctx.fillStyle=RIB.edge; ctx.fillRect(sx,top,1,1);
     ctx.fillStyle=RIB.dark; ctx.fillRect(sx,bot-1,1,1);
@@ -211,25 +215,32 @@ function drawRacer(r,cx){
   if(r.magnetT>0 && ((t*6)|0)%2){ ctx.fillStyle='#e8455f'; ctx.fillRect(sx-1,Math.round(feet)-34,3,1); ctx.fillRect(sx-1,Math.round(feet)-33,1,2); ctx.fillRect(sx+1,Math.round(feet)-33,1,2); }
   if(r.isPlayer && !demo && mode==='countdown'){ ctx.fillStyle=twoP&&r.idx===1?'#7fe3bd':'#ffd76a'; const py=Math.round(feet-38+Math.sin(t*6)*2); ctx.fillRect(sx-2,py,5,1); ctx.fillRect(sx-1,py+1,3,1); ctx.fillRect(sx,py+2,1,1); }
 }
+const sceneCv=document.createElement('canvas'); sceneCv.width=320; sceneCv.height=180;
+function renderScene(){ if(mode==='photo') renderPhoto(); else if(mode==='cutscene') renderCutscene(); else renderDance(); }
 function render(){
-  if(mode==='photo'){ renderPhoto(); return; }
-  if(mode==='cutscene'){ renderCutscene(); return; }
-  if(mode==='dance'){ renderDance(); return; }
+  if(mode==='photo'||mode==='cutscene'||mode==='dance'){
+    // these scenes are drawn at 320x180; on a tall screen, draw them at the bottom and stretch their top row into the extra sky
+    if(VH>180 && !twoP){ const main=ctx, sc=sceneCv.getContext('2d'); sc.imageSmoothingEnabled=false; ctx=sc; W=320; H=180;
+      try{ renderScene(); } finally { ctx=main; W=320; H=VH; }
+      const top=VH-180; ctx.drawImage(sceneCv,0,0,320,1,0,0,320,top); ctx.drawImage(sceneCv,0,top); }
+    else renderScene();
+    return; }
   const flip=!twoP && !demo && Math.abs(flipV-1)>.002;
   if(flip){ ctx.save(); ctx.translate(W/2,0); ctx.scale(Math.abs(flipV)<.04?(flipV<0?-.04:.04):flipV,1); ctx.translate(-W/2,0); }
   try{ renderMain(); } finally { if(flip) ctx.restore(); }
   if(freeMode && !demo) renderFreeOverlay(cams[0].x,'screen');
 }
 function renderMain(){
-  if(twoP && !demo){ renderView(players[0],cams[0],0); renderView(players[1],cams[1],H); }
-  else if(!demo && Math.abs(viewZoom-1)>.005){
-    // zoomed: draw the world into a bigger (or smaller) view, then scale it onto the screen
-    const z=viewZoom, w=Math.ceil(320/z), h=Math.ceil(180/z);
+  if(twoP && !demo){ renderView(players[0],cams[0],0); renderView(players[1],cams[1],H); return; }
+  const z=demo?1:viewZoom, SH=twoP?180:VH;
+  if(Math.abs(z-1)>.005 || SH>180){
+    // zoomed or tall screen: draw the world into a bigger (or smaller) view, then scale it onto the screen
+    const w=Math.ceil(320/z), h=Math.ceil(SH/z);
     if(zoomCv.width!==w||zoomCv.height!==h){ zoomCv.width=w; zoomCv.height=h; }
     const zc=zoomCv.getContext('2d'); zc.imageSmoothingEnabled=false;
     const main=ctx; ctx=zc; W=w; H=h;
-    const c=cams[0], dy=h-180; c.y+=dy;   // put the extra room in the sky, not under the ground
-    try{ renderView(players[0],c,0); } finally { ctx=main; W=320; H=180; c.y-=dy; }
+    const c=cams[0], dy=h-180; c.y+=dy; viewDy=dy;   // put the extra room in the sky, not under the ground
+    try{ renderView(players[0],c,0); } finally { ctx=main; W=320; H=SH; c.y-=dy; viewDy=0; }
     ctx.drawImage(zoomCv,0,0,w,h,0,0,W,H);
   }
   else renderView(players[0],cams[0],0);

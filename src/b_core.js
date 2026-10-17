@@ -40,15 +40,16 @@ const CONFIG = {
   // camera zoom: 1 = normal. Lower = further out. airMin is how far out the biggest jumps go
   // FABULOUS MODE (single player): grab a power-up and the world goes rainbow-glitter and the music drops into a K-pop banger
   fab: { time: 6.5, fade: 1.6 },
+  tallMax: 310,          // tallest game screen (in pixels at 320 wide) when there's room above the controls
   // STAR TURBO: fills up slowly; when full, tap STAR to blast off golden and unstoppable
   star: { time: 5.5, speed: 1.75, gem: .009, bigGem: .04, dive: .07, item: .12, combo: .035, flip: .09, smooth: .025 },
   flip: { window: .32, time: .55, boost: 45, gems: 3 },   // double-tap jump in the air for a flippy flop
-  zoom: { airStart: 12, airRange: 230, airMin: .32, peakStart: 70, peakRange: 220, peakMin: .55, uphill: 1.12, slowmo: .6, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
+  zoom: { airStart: 10, airRange: 220, airMin: .26, peakStart: 60, peakRange: 200, peakMin: .5, uphill: 1.12, slowmo: .5, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you
   rubberBand: [0.86, 1.06],
   items: { magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
   combo: n => n*(n-1),   // bonus gems for clearing n obstacles in one flight
-  slowmo: { height: 52, time: 0.45, scale: 0.4 },
+  slowmo: { height: 46, time: 0.65, scale: 0.35 },
   // levels come in chapters: 3 races then a boss. Each chapter is faster with more obstacles.
   levels: { speedPerChapter:0.12, speedPerLevel:0.03, maxSpeed:1.7, rampLevels:6, bpmPerLevel:6 },
   difficulty: { perChapter:0.32, perLevel:0.07, obstaclesMin:0.35 },   // obstaclesMin: share of obstacles kept in the gentlest levels

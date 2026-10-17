@@ -33,7 +33,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 #app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding-inline:16px;padding-block:10px;box-sizing:border-box}
 #stage{position:relative;container-type:size;background:#a98bf0;border-radius:10px;overflow:hidden;
   box-shadow:0 0 0 3px var(--plum),0 0 0 9px #ffc2ea,0 0 0 12px var(--plum),0 12px 0 12px #b0388f,0 12px 0 15px var(--plum),0 22px 30px 10px rgba(60,0,60,.35);flex:none}
-#game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;transition:filter .35s}
+#game.inv{filter:invert(1) hue-rotate(180deg) saturate(1.7) contrast(1.1)}
 
 /* ---------- HUD ---------- */
 #hud{position:absolute;inset:0 0 auto 0;display:flex;justify-content:space-between;align-items:flex-start;gap:2cqw;
@@ -80,7 +81,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 /* ---------- Touch pads ---------- */
 .pad{--k:clamp(50px,14vw,70px);display:flex;justify-content:space-between;align-items:center;gap:16px;width:min(100%,760px);touch-action:none;flex:none}
 /* the controller: a glossy pink handheld shell the buttons sit in */
-#pad{position:relative;gap:clamp(8px,2vw,12px);padding:calc(var(--k)*.55) clamp(10px,3vw,16px) 22px;border-radius:38px 38px 56px 56px;
+#pad{position:relative;gap:clamp(8px,2vw,12px);padding:calc(var(--k)*.42) clamp(10px,3vw,18px) 22px;border-radius:38px 38px 56px 56px;
   background:radial-gradient(120% 70% at 50% 0%,#ffd0ef 0%,#ff9fd8 30%,#f377c6 62%,#d958b0 100%);
   box-shadow:0 0 0 3px var(--plum),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -10px 0 rgba(150,30,110,.35),0 10px 0 3px var(--plum),0 18px 26px 4px rgba(60,0,60,.35)}
 #pad::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;
@@ -95,9 +96,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 @keyframes led{50%{opacity:.55}}
 /* sockets: each button sits in a little sunken well */
 #pad .lanes.one{position:relative;padding:8px;border-radius:30px;background:rgba(150,30,110,.28);box-shadow:inset 0 4px 8px rgba(80,0,60,.4),0 2px 0 rgba(255,255,255,.5)}
-#pad .mid1{display:flex;flex-direction:column;align-items:center;gap:14px;flex:none;padding:10px clamp(4px,1.2vw,8px);border-radius:999px;background:rgba(150,30,110,.22);box-shadow:inset 0 4px 8px rgba(80,0,60,.35),0 2px 0 rgba(255,255,255,.5)}
+#pad .mid1{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none;padding:10px clamp(4px,1.2vw,8px);border-radius:999px;background:rgba(150,30,110,.22);box-shadow:inset 0 4px 8px rgba(80,0,60,.35),0 2px 0 rgba(255,255,255,.5)}
 /* STAR TURBO: a ring fills up gold; when it's full the star glows and wiggles */
-#pad .star1{position:relative;border:0;border-radius:50%;padding:0;width:min(calc(var(--k)*1.25),17vw);height:min(calc(var(--k)*1.25),17vw);overflow:visible;
+#pad .star1{position:relative;border:0;border-radius:50%;padding:0;width:min(calc(var(--k)*1),14vw);height:min(calc(var(--k)*1),14vw);overflow:visible;
   background:conic-gradient(from -90deg,#ffd76a calc(var(--c,0)*360deg),rgba(58,35,80,.45) 0);
   box-shadow:0 0 0 3px var(--plum),0 6px 0 3px var(--plum),0 9px 8px 3px rgba(60,0,60,.3);transition:transform .38s cubic-bezier(.25,1.9,.45,1)}
 #pad .star1 .sd{position:absolute;inset:12%;border-radius:50%;display:grid;place-items:center;align-content:center;pointer-events:none;overflow:hidden;
@@ -136,11 +137,11 @@ body.pad-over #pad .lanes.one,body.pad-over #pad .mid1{background:none;box-shado
 .b-a{background:var(--pink);color:var(--plum)}
 .pl2{display:flex;align-items:center;gap:12px}
 .lanes{display:grid;gap:6px}
-.lanes.one{gap:12px;flex:0 1 240px;min-width:0;display:grid}
+.lanes.one{gap:10px;flex:0 1 180px;min-width:0;display:grid}
 /* ---------- JELLY buttons: squishy, glossy, see-through candy like a 90s handheld ---------- */
 .lanes.one button,#pad .jump1,#pad .power1{transition:transform .38s cubic-bezier(.25,1.9,.45,1),box-shadow .2s}
 .lanes.one button.on,#pad .jump1.on,#pad .power1.on{transition-duration:.06s}
-.lanes.one button{position:relative;width:100%;height:calc(var(--k)*1.45);border:0;color:var(--plum);overflow:hidden;
+.lanes.one button{position:relative;width:100%;height:calc(var(--k)*1.1);border:0;color:var(--plum);overflow:hidden;
   background:radial-gradient(ellipse 60% 45% at 50% 78%,rgba(255,236,255,.75),transparent 70%),
              linear-gradient(180deg,#efe6ff 0%,#c9b2ff 38%,#a585f5 72%,#8a66e6 100%);
   box-shadow:0 0 0 3px var(--plum),0 8px 0 0 #7a58cf,0 8px 0 3px var(--plum),0 14px 12px 2px rgba(10,0,25,.45),
@@ -154,13 +155,13 @@ body.pad-over #pad .lanes.one,body.pad-over #pad .mid1{background:none;box-shado
 .lanes.one button.on{transform:translateY(7px) scale(1.04,.9);
   box-shadow:0 0 0 3px var(--plum),0 1px 0 0 #7a58cf,0 1px 0 3px var(--plum),0 5px 8px 2px rgba(10,0,25,.4),
     inset 0 -6px 16px rgba(80,30,170,.55),inset 0 3px 4px rgba(255,255,255,.9),inset 0 0 0 2px rgba(255,255,255,.35)}
-.lanes.one svg{position:relative;z-index:1;width:44%;max-width:84px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 0 rgba(58,35,80,.35))}
+.lanes.one svg{position:relative;z-index:1;width:40%;max-width:60px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 0 rgba(58,35,80,.35))}
 .lanes.one svg path{fill:var(--pink);stroke:var(--plum);stroke-width:3.5;stroke-linejoin:round}
 .lanes.one svg .shine{fill:rgba(255,255,255,.75);stroke:none}
 .lanes.one button small{position:relative;z-index:1;font-size:9px;pointer-events:none}
 #pad .act1{display:flex;align-items:center;gap:22px}
 /* big JUMP: gold bezel + pink jelly dome, with your horse peeking over the top */
-#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),34vw);height:min(calc(var(--k)*2.8),34vw);margin-top:calc(min(calc(var(--k)*2.8),34vw)*.3);border:0;padding:0;overflow:visible;background:none;box-shadow:none}
+#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.15),27vw);height:min(calc(var(--k)*2.15),27vw);margin-top:calc(min(calc(var(--k)*2.15),27vw)*.3);border:0;padding:0;overflow:visible;background:none;box-shadow:none}
 #pad .jump1.on{transform:none;box-shadow:none}
 #pad .jump1 .bezel{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 42%,#fffbe6 0 52%,#ffe48a 60%,#f2b632 70%,#d9961a 72%);
@@ -184,9 +185,9 @@ body.pad-over #pad .lanes.one,body.pad-over #pad .mid1{background:none;box-shado
     radial-gradient(ellipse at 76% 80%,rgba(255,255,255,.9) 0 4%,transparent 6%);
   animation:glitter 1.4s steps(4) infinite}
 @keyframes glitter{0%{background-position:12% 30%,70% 60%,40% 80%,0 0;opacity:1}50%{opacity:.55}100%{background-position:20% 18%,58% 72%,52% 68%,0 0;opacity:1}}
-#pad .jump1 .jl{position:relative;z-index:1;margin-top:14%;font-size:clamp(14px,3.4vw,20px);letter-spacing:.06em;color:#fff;
+#pad .jump1 .jl{position:relative;z-index:1;margin-top:14%;font-size:clamp(11px,2.6vw,16px);letter-spacing:.06em;color:#fff;
   text-shadow:2px 0 0 var(--plum),-2px 0 0 var(--plum),0 2px 0 var(--plum),0 -2px 0 var(--plum),2px 2px 0 var(--plum),-2px 2px 0 var(--plum),2px -2px 0 var(--plum),-2px -2px 0 var(--plum),0 3px 0 var(--plum)}
-#pad .power1{position:relative;overflow:hidden;border-radius:50%;width:min(calc(var(--k)*1.1),15vw);height:min(calc(var(--k)*1.1),15vw);font-size:11px;border:0;color:var(--plum);
+#pad .power1{position:relative;overflow:hidden;border-radius:50%;width:min(calc(var(--k)*.9),12vw);height:min(calc(var(--k)*.9),12vw);font-size:11px;border:0;color:var(--plum);
   background:radial-gradient(circle at 50% 74%,rgba(255,250,214,.9) 0 18%,transparent 52%),radial-gradient(circle at 50% 40%,#ffe58f,#ffc93a 55%,#e09a12 90%);
   box-shadow:0 0 0 3px var(--plum),0 7px 0 0 #b9780a,0 7px 0 3px var(--plum),0 11px 10px 2px rgba(10,0,25,.4),inset 0 -8px 14px rgba(150,80,0,.4),inset 0 3px 4px rgba(255,255,255,.9)}
 #pad .power1::before{content:"";position:absolute;left:16%;right:16%;top:6%;height:38%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.1));pointer-events:none}

@@ -281,7 +281,10 @@ function layout(){
   let ah=app.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
   if(document.body.classList.contains('photo')) ah-=$('photoBar').offsetHeight+14;
   else if(desktop) ah-=$('keys').offsetHeight+14;
-  else if(!over) ah-=(twoP&&VH>180?$('pad2'):$('pad')).offsetHeight+44;
+  else if(!over) ah-=(twoP?$('pad2'):$('pad')).offsetHeight+44;
+  // single player on a phone/tablet held upright: make the game screen taller (more sky) to fill the space
+  if(!twoP){ const want=(!desktop && !over) ? clamp(Math.floor(320*ah/Math.max(1,aw)/2)*2,180,CONFIG.tallMax) : 180;
+    if(want!==VH){ cv.height=want; VH=want; H=want; ctx.imageSmoothingEnabled=false; } }
   const ratio=W/VH, w=Math.max(160,Math.min(aw,ah*ratio)), st=$('stage');
   st.style.width=Math.floor(w)+'px'; st.style.height=Math.floor(w/ratio)+'px';
 }
