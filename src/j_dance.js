@@ -7,13 +7,13 @@ const COURT = {
   dragon:{ title:'DRAGON\'S DEN', sky:['#3a0f1a','#5a1620','#8a2424','#c23c2a'], wall:'#7a3a2a', wall2:'#5a2a1e', top:'#a8503a', floor:['#ffb36b','#e0844a','#ff5f5f','#ffe066'], banner:'#5fcf8f', mark:'#ffd76a', lights:['#ffb347','#ff5f5f','#ffe066'], charm:'FLAME CHARM' },
   king:  { title:'SUMMIT HALL', sky:['#8ea4ff','#a6b8ff','#c4d0ff','#e0e6ff'], wall:'#a4a9cc', wall2:'#8a8fb4', top:'#c4c8e6', floor:['#ffffff','#c4c8e6','#ffcf5a','#cfe0ff'], banner:'#ffcf5a', mark:'#ffffff', lights:['#ffcf5a','#ffffff','#cfe0ff'], charm:'MOUNTAIN CHARM' },
 };
-const DANCE_BARS = [ [[0,'J'],[2,'J']], [[0,'U'],[2,'D']], [[0,'J'],[1,'U'],[2,'J'],[3,'D']], [[0,'U'],[1,'D'],[2,'U'],[3,'D']],
-  [[0,'J'],[1,'J'],[2,'J'],[3,'U']], [[0,'D'],[1,'U'],[2,'J'],[3,'J']], [[0,'J'],[1.5,'J'],[2,'U'],[3,'D']], [[0,'U'],[1,'J'],[2,'D'],[3,'J'],[3.5,'J']] ];
-const DANCE_BPM=112, DANCE_LEAD=2, DANCE_TRAVEL=1.9, HIT_X=46, LANE_Y=30;
+// little-kid friendly: one or two big slow notes per bar, mostly JUMP
+const DANCE_BARS = [ [[0,'J']], [[0,'J'],[2,'J']], [[0,'U']], [[0,'D']], [[0,'J'],[2,'U']], [[0,'J'],[2,'D']], [[0,'U'],[2,'J']], [[0,'J'],[2,'J']] ];
+const DANCE_BPM=92, DANCE_LEAD=2, DANCE_TRAVEL=3.2, HIT_X=46, LANE_Y=30;
 const dance={ t:0, t0:0, boss:'queen', notes:[], hits:0, perfect:0, combo:0, best:0, done:false, doneT:0, pose:'', poseT:0, wob:0, judge:'', judgeT:0, stars:0, reward:0, p:null };
 const beatLen=()=>60/DANCE_BPM;
 function startDance(){
-  const boss=cs.boss, order=[0,1,0,2,3,1,4,5,6,7];
+  const boss=cs.boss, order=[0,1,0,2,1,3,4,5,6,7];
   const notes=[]; order.forEach((bi,k)=>{ for(const [b,type] of DANCE_BARS[bi]) notes.push({beat:(DANCE_LEAD+k)*4+b,type,judged:false,res:''}); });
   Object.assign(dance,{t:-.15,boss,notes,hits:0,perfect:0,combo:0,best:0,done:false,doneT:0,pose:'',poseT:0,wob:0,judge:'',judgeT:0,stars:0,reward:0,p:cs.p});
   particles.length=0; mode='dance'; shake=0;
@@ -28,11 +28,10 @@ function danceHit(act){
   const type=act==='jump'?'J':act==='up'?'U':'D';
   let best=null, bd=1e9;
   for(const n of dance.notes){ if(n.judged) continue; const d=Math.abs(noteTime(n)-dance.t); if(d<bd){ bd=d; best=n; } if(noteTime(n)>dance.t+.4) break; }
-  if(!best || bd>.26) return;
-  if(best.type!==type){ dance.wob=.4; dance.judge='OOPS!'; dance.judgeT=.5; if(ac) tone(220,.12,'square',.03,180); return; }
-  best.judged=true; const perfect=bd<.1; best.res=perfect?'P':'G';
+  if(!best || bd>.6) return;
+  best.judged=true; const perfect=best.type===type && bd<.3; best.res=perfect?'P':'G';
   dance.hits++; if(perfect) dance.perfect++; dance.combo++; dance.best=Math.max(dance.best,dance.combo);
-  dance.judge=perfect?'PERFECT!':'GREAT!'; dance.judgeT=.5; dance.pose=type; dance.poseT=.42;
+  dance.judge=perfect?['PERFECT!','AMAZING!','WOW!','YAY!'][dance.hits%4]:['GREAT!','NICE!','GO GO!'][dance.hits%3]; dance.judgeT=.5; dance.pose=best.type; dance.poseT=.42;
   if(ac){ const base=type==='J'?84:type==='U'?88:79; tone(mf(base),.12,'triangle',.05); tone(mf(base+7),.12,'sine',.03,0,ac.currentTime+.05); }
   for(let i=0;i<(perfect?14:8);i++){ const a=Math.random()*Math.PI*2, sp=30+Math.random()*60;
     particles.push({x:(i%2?128:196),y:96,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-30,life:.8,c:FLOWER_C[i%FLOWER_C.length],shape:i%3?'heart':'flower',g:60}); }
@@ -41,10 +40,10 @@ function danceHit(act){
 function updateDance(dt){
   danceClock(dt); cheerT=Math.max(cheerT,.3);
   if(dance.poseT>0) dance.poseT-=dt; if(dance.wob>0) dance.wob-=dt; if(dance.judgeT>0) dance.judgeT-=dt;
-  for(const n of dance.notes) if(!n.judged && dance.t>noteTime(n)+.26){ n.judged=true; n.res='M'; dance.combo=0; dance.wob=.35; dance.judge='MISS'; dance.judgeT=.4; }
+  for(const n of dance.notes) if(!n.judged && dance.t>noteTime(n)+.6){ n.judged=true; n.res='M'; dance.wob=.3; }
   const last=noteTime(dance.notes[dance.notes.length-1]);
   if(!dance.done && dance.t>last+.8){
-    dance.done=true; dance.doneT=0; const pct=dance.hits/dance.notes.length; dance.stars=pct>=.85?3:pct>=.6?2:1; dance.reward=dance.stars*5;
+    dance.done=true; dance.doneT=0; const pct=dance.hits/dance.notes.length; dance.stars=pct>=.5?3:2; dance.reward=dance.stars*5;
     save.gems=(save.gems|0)+dance.reward; save.friends=save.friends||{}; save.friends[dance.boss]=Math.max(save.friends[dance.boss]|0,dance.stars); persist();
     SFX.fanfare(); for(let i=0;i<50;i++){ const a=Math.random()*Math.PI*2, sp=40+Math.random()*110; particles.push({x:160,y:90,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:1.6,c:FLOWER_C[i%FLOWER_C.length],shape:i%2?'flower':'bigheart',g:60}); }
   }
@@ -97,7 +96,7 @@ function renderDance(){
   const pct=dance.hits/dance.notes.length; ctx.fillStyle='#3a2350'; ctx.fillRect(212,LANE_Y+18,100,8); ctx.fillStyle='#ff6fae'; ctx.fillRect(213,LANE_Y+19,Math.round(98*pct),6);
   ctx.fillStyle='#ffffff'; ctx.fillRect(213,LANE_Y+19,Math.round(98*pct),1); pixelText('♥ FRIENDSHIP',262,LANE_Y+40,'#fff6fb',8);
   if(dance.t<DANCE_LEAD*4*beatLen()){ pixelText(C.title,160,66,'#ffd76a',12); pixelText('DANCE PARTY WITH '+CONFIG.bosses[dance.boss].name.toUpperCase()+'!',160,80,'#fff6fb',8);
-    if(((t*2)|0)%2) pixelText('TAP THE MATCHING BUTTON IN THE RING',160,172,'#fff6fb',8); }
+    if(((t*2)|0)%2) pixelText('TAP WHEN THE NOTE REACHES THE RING!',160,172,'#fff6fb',8); }
   if(dance.combo>=4 && !dance.done) pixelText('×'+dance.combo,160,108,'#ff6fae',8);
   if(dance.done){ ctx.fillStyle='rgba(36,22,56,.55)'; ctx.fillRect(40,56,240,74);
     pixelText('BEST FRIENDS FOREVER!',160,76,'#fff6fb',12);
