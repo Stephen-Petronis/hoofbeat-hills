@@ -10,7 +10,9 @@ let mode='title', twoP=false, demo=true;
 let players=[], racers=[], ghost=null, rec=[], recT=0;
 const cams=[{x:0,y:0},{x:0,y:0}];
 let raceT=0, countdown=0, finishTimer=0, firstFinish=null, t=0, lastCount=0;
-let shake=0, slowT=0, cheerT=0, gaspT=0;
+let shake=0, slowT=0, cheerT=0, gaspT=0, fabT=0, fabIn=0;
+const fabI=()=>fabT<=0?0:Math.min(1,fabIn,fabT/CONFIG.fab.fade);
+function startFab(){ const was=fabT>0; fabT=CONFIG.fab.time; if(!was){ fabIn=0; SFX.fab(); if(!muted) Music.fab(true); } }
 let viewZoom=1;   // camera pulls back for big jumps, bullet time and a big free-run herd
 let level = Math.max(1, save.maxLevel|0);
 let chosen='unicorn', chosen2='pegasus', pickStage=0;
@@ -48,7 +50,7 @@ function setupRace(isDemo){
   ghost = (!two && !isDemo && !free && save.ghost) ? loadGhost(chosen,level) : null;
   rec=[]; recT=0;
   shrooms.forEach(s=>s.squish=0);
-  particles.length=0; raceT=0; firstFinish=null; slowT=0;
+  particles.length=0; raceT=0; firstFinish=null; slowT=0; fabT=0;
   for(const c of cams){ c.x=START_X-100; c.y=0; }
   setCanvasMode(two);
   buildProgressDots();
@@ -98,7 +100,7 @@ function emit(type,r,arg){
     case 'giggle': SFX.giggle(); toast(['BOING!','WHEE!','HEE HEE!'][(Math.random()*3)|0]); break;
     case 'cloud': SFX.cloud(); break;
     case 'splash': SFX.splash(); break;
-    case 'item': SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!'}[arg]); cheerT=1.2; break;
+    case 'item': if(r.isPlayer && !twoP && !demo) startFab(); SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!'}[arg]); cheerT=1.2; break;
     case 'combo': SFX.combo(arg.n); toast(who+'COMBO ×'+arg.n+'  +'+arg.bonus+' ◆'); cheerT=1.6; break;
   }
 }
@@ -358,21 +360,38 @@ function update(dt){
         particles.push({x:r.x-14+Math.random()*4,y:ry(r)-15+Math.random()*7,vx:-20-Math.random()*30,vy:TS.fire?-25-Math.random()*30:-12+Math.random()*14,life:.5+Math.random()*.5,c:TS.pc[(Math.random()*TS.pc.length)|0],sz:1,shape:TS.p,g:TS.fire?-15:0});
     }
   }
+  // fabulous mode countdown + glitter around your horse
+  if(fabT>0){ fabT-=dt; fabIn=Math.min(1,fabIn+dt*3); const p=players[0];
+    if(Math.random()<.7*fabI()) particles.push({x:p.x-20+Math.random()*40,y:ry(p)-10-Math.random()*30,vx:-30-Math.random()*40,vy:-10-Math.random()*25,life:.7,c:`hsl(${(t*200+Math.random()*90)%360},95%,75%)`,shape:Math.random()<.4?'heart':'star',g:-10});
+    if(fabT<=0){ fabT=0; SFX.unfab(); Music.fab(false); } }
   // zoom: pull back on big air and in bullet time so the landing (and the ramp) stays in view
   { let zt=1; const p0=players[0];
     if(!twoP && !demo && (mode==='race'||mode==='finish')){
       if(freeMode) zt=Math.min(zt,fr.herdZoom||1);
-      if(p0.state==='air'||p0.state==='phase'){ const hg=p0.alt-heightAt(p0.x); zt=Math.min(zt,1-clamp((hg-18)/110,0,1)*.3); }
-      if(slowT>0) zt=Math.min(zt,.7);
+      const Z=CONFIG.zoom;
+      // the higher you fly, the further the camera pulls back: float like a cloud, then swoop like a hawk
+      if(p0.state==='air'||p0.state==='phase'){ const hg=p0.alt-heightAt(p0.x); zt=Math.min(zt,1-clamp((hg-Z.airStart)/Z.airRange,0,1)*(1-Z.airMin)); }
+      // grinding up a hill: lean in close
+      else if(p0.state==='ground' && slopeAt(p0.x)>.12 && !freeMode) zt=Z.uphill;
+      if(slowT>0) zt=Math.min(zt,Z.slowmo);
     }
-    viewZoom+=(zt-viewZoom)*Math.min(1,dt*(zt<viewZoom?3.5:1.6)); }
+    viewZoom+=(zt-viewZoom)*Math.min(1,dt*(zt<viewZoom?CONFIG.zoom.outSpeed:CONFIG.zoom.inSpeed)); }
   // cameras
   const views = (twoP && !demo) ? players : [players[0]];
   views.forEach((p,i)=>{ const c=cams[i], lead=clamp((p.vx-p.P.top)*.35,0,60);
     const z=(!twoP&&!demo)?viewZoom:1;
     c.x+=(p.x-100/z+lead-c.x)*Math.min(1,dt*8);
-    const headY=ry(p)-30; c.y+=(Math.max(0,36-headY)-c.y)*Math.min(1,dt*7);
-    const feetS=ry(p)+c.y; if(feetS>180/z-16) c.y=180/z-16-ry(p); if(headY+c.y<14) c.y=Math.max(0,14-headY); });
+    const headY=ry(p)-30;
+    if(z<.97){
+      // zoomed out: frame the horse AND the ground under her, so kids can see where they'll come down
+      const h=180/z, extra=h-180, gY=laneY(p.laneY)-heightAt(p.x+p.vx*.4);
+      const want=Math.max(0,Math.max(h-30-gY,24-headY)-extra);
+      c.y+=(want-c.y)*Math.min(1,dt*5);
+      if(headY+c.y+extra<8) c.y=8-headY-extra;
+    } else {
+      c.y+=(Math.max(0,36-headY)-c.y)*Math.min(1,dt*7);
+      const feetS=ry(p)+c.y; if(feetS>180/z-16) c.y=180/z-16-ry(p); if(headY+c.y<14) c.y=Math.max(0,14-headY);
+    } });
   // turbo: speed lines and a shout when a downhill gets you going really fast
   for(const p of players){
     if(p.vx>p.P.top*1.4 && p.state!=='tumble' && Math.random()<.6) particles.push({x:p.x+Math.random()*220-30,y:ry(p)-44+Math.random()*56,vx:-p.vx*.7,vy:0,life:.22,c:'#ffffff',shape:'streak',g:0});

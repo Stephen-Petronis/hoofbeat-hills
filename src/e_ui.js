@@ -161,7 +161,7 @@ function goSelect(){ Music.stop(); mode='select'; hud.hidden=true; hud2.hidden=t
 let pausedFrom='race';
 function pause(on){
   if(on && (mode==='race'||mode==='countdown')){ pausedFrom=mode; mode='paused'; Music.stop(); show('paused'); }
-  else if(!on && mode==='paused'){ mode=pausedFrom; show(null); if(mode==='race'&&!muted) Music.start(level); }
+  else if(!on && mode==='paused'){ mode=pausedFrom; show(null); if(mode==='race'&&!muted){ Music.start(level); if(fabT>0) Music.fab(true); } }
 }
 $('startBtn').addEventListener('click',()=>{ audio(); goSelect(); });
 $('againBtn').addEventListener('click',()=>{ if(nextOnAgain) level++; startRace(); });

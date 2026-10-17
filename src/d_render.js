@@ -86,6 +86,7 @@ function renderView(focus,cam,y0){
   const sx0=shake>0?Math.round((Math.random()*2-1)*shake):0, sy0=shake>0?Math.round((Math.random()*2-1)*shake):0;
   ctx.save(); ctx.beginPath(); ctx.rect(0,y0,W,H); ctx.clip(); ctx.translate(sx0,y0+sy0);
   renderBackground(cam.x,cy);
+  if(!twoP && !demo) renderFab('back');
   ctx.save(); ctx.translate(0,cy);
   // track columns
   for(let sx=0;sx<W;sx++){
@@ -145,6 +146,33 @@ function renderView(focus,cam,y0){
   renderForeground(cam.x);
   if(freeMode && !demo) renderFreeOverlay(cx,'world');
   ctx.restore();
+  if(!twoP && !demo) renderFab('front');
+  ctx.restore();
+}
+// FABULOUS MODE: rolling rainbow wash, beat flashes, glitter everywhere, a shimmering rainbow frame
+function renderFab(layer){
+  const I=fabI(); if(I<=0) return;
+  const beat=1-((t*(Music.bpm||132)/60)%1);
+  ctx.save();
+  if(layer==='back'){
+    const g=ctx.createLinearGradient(0,0,W,H*.6);
+    for(let i=0;i<=6;i++) g.addColorStop(i/6,`hsl(${(t*140+i*55)%360},95%,72%)`);
+    ctx.globalCompositeOperation='screen'; ctx.globalAlpha=.42*I; ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=.16*I*beat*beat; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='source-over';
+    // spinning light rays from the sun spot
+    ctx.globalAlpha=.13*I; ctx.fillStyle='#fff6fb'; const ox=W*.72, oy=H*.25, R=Math.max(W,H);
+    for(let k=0;k<10;k++){ const a=t*.6+k*Math.PI/5; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+Math.cos(a)*R,oy+Math.sin(a)*R); ctx.lineTo(ox+Math.cos(a+.13)*R,oy+Math.sin(a+.13)*R); ctx.fill(); }
+  }
+  ctx.globalAlpha=I;
+  const n=layer==='back'?Math.round(W*.16):Math.round(W*.06), cols=['#ffffff','#fff4a8','#ffb3d6','#a6f2ff','#c9b2ff'];
+  for(let i=0;i<n;i++){ const slot=Math.floor(t*3+i*.37), h=hash(i*131+slot*7+(layer==='back'?0:999)), ph=(t*3+i*.37)%1;
+    if(ph>.75) continue; const x=h%W, y=(h>>>10)%H, big=ph>.2&&ph<.55&&(h&3)===0; ctx.fillStyle=cols[(h>>>20)%5];
+    ctx.fillRect(x,y,1,1); if(ph>.1&&ph<.65){ ctx.fillRect(x-1,y,3,1); ctx.fillRect(x,y-1,1,3); }
+    if(big){ ctx.fillRect(x-2,y,5,1); ctx.fillRect(x,y-2,1,5); } }
+  if(layer==='front'){ const th=Math.max(2,Math.round(2*W/320)), seg=8*W/320;
+    for(let x=0;x<W;x+=seg){ ctx.fillStyle=`hsl(${(x*2-t*300)%360+360},95%,70%)`; ctx.fillRect(x,0,seg,th); ctx.fillRect(W-x-seg,H-th,seg,th); }
+    for(let y=0;y<H;y+=seg){ ctx.fillStyle=`hsl(${(y*2-t*300)%360+360},95%,70%)`; ctx.fillRect(0,H-y-seg,th,seg); ctx.fillRect(W-th,y,th,seg); } }
   ctx.restore();
 }
 function drawPonyAt(S,spr,sx,feet,a,hat){
@@ -178,8 +206,8 @@ function render(){
   if(mode==='photo'){ renderPhoto(); return; }
   if(mode==='cutscene'){ renderCutscene(); return; }
   if(twoP && !demo){ renderView(players[0],cams[0],0); renderView(players[1],cams[1],H); }
-  else if(!demo && viewZoom<.995){
-    // zoomed out: draw the world into a bigger view, then shrink it onto the screen
+  else if(!demo && Math.abs(viewZoom-1)>.005){
+    // zoomed: draw the world into a bigger (or smaller) view, then scale it onto the screen
     const z=viewZoom, w=Math.ceil(320/z), h=Math.ceil(180/z);
     if(zoomCv.width!==w||zoomCv.height!==h){ zoomCv.width=w; zoomCv.height=h; }
     const zc=zoomCv.getContext('2d'); zc.imageSmoothingEnabled=false;
@@ -218,13 +246,14 @@ function renderPhoto(){
 
 // dotted guide while flying: white = where you'll land, pink = where you'd land if you dive right now
 function drawTrajectory(r,cx){
-  const P=r.P, base=laneY(r.laneY), dt=.035;
+  const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1;   // chunkier dots when zoomed way out
   const sim=(dive,col)=>{ let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
-    for(let i=0;i<90;i++){
+    for(let i=0;i<180;i++){
       if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*dt;
       x+=vx*dt; a+=vz*dt; const g=heightAt(x);
-      if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; ctx.fillRect(sx-2,sy-2,1,1); ctx.fillRect(sx+2,sy-2,1,1); ctx.fillRect(sx-1,sy-1,3,1); ctx.fillRect(sx,sy-1,1,1); ctx.fillRect(sx-2,sy,1,1); ctx.fillRect(sx+2,sy,1,1); return; }
-      if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2,2); }
+      if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; const X=(dx,dy,w,h)=>ctx.fillRect(sx+dx*m,sy+dy*m,w*m,h*m);
+        X(-2,-2,1,1); X(2,-2,1,1); X(-1,-1,3,1); X(0,-1,1,1); X(-2,0,1,1); X(2,0,1,1); return; }
+      if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2*m,2*m); }
     } };
   ctx.globalAlpha=.9; sim(false,'#ffffff'); if(!r.dive) sim(true,'#ff6fae'); ctx.globalAlpha=1;
 }

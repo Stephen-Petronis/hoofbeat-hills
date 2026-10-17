@@ -36,7 +36,11 @@ const CONFIG = {
   // hills: uphill slows you toward uphillMin × top speed; downhill pushes you past top speed up to speedCap × top
   uphillDrag: 1.35, uphillMin: 0.34, uphillBrake: 420, downhillPush: 540, coastDrag: 38, speedCap: 2.3,
   smoothLanding: 28,     // speed bonus for landing on a downhill
-  dive: { speed: 430, boost: 75 },   // press DOWN in the air: drop fast; land on a downhill for a boost
+  dive: { speed: 430, boost: 75 },
+  // camera zoom: 1 = normal. Lower = further out. airMin is how far out the biggest jumps go
+  // FABULOUS MODE (single player): grab a power-up and the world goes rainbow-glitter and the music drops into a K-pop banger
+  fab: { time: 6.5, fade: 1.6 },
+  zoom: { airStart: 12, airRange: 190, airMin: .42, uphill: 1.12, slowmo: .6, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you
   rubberBand: [0.86, 1.06],
   items: { magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
@@ -526,6 +530,8 @@ const SFX = {
   fire(){ noise(.3,.1); tone(200,.4,'sawtooth',.04,900); }, moon(){ arp([84,91,96,103],.05,.03,'sine'); tone(600,.5,'sine',.03,300); },
   charge(){ tone(160,.3,'square',.05,420); noise(.12,.06); },
   warn(){ tone(880,.08,'square',.04); tone(880,.08,'square',.04,0,ac&&ac.currentTime+.14); },
+  fab(){ tone(220,.55,'sawtooth',.03,1760); noise(.5,.05); arp([81,84,88,93,96,100],.05,.035,'square'); },
+  unfab(){ tone(1400,.7,'sine',.035,180); arp([88,84,81,76],.08,.025,'triangle'); },
   smooth(){ arp([79,86],.05,.03,'triangle'); }, dive(){ tone(900,.22,'square',.035,220); }, slam(){ noise(.15,.1); arp([72,79,84,91],.04,.045,'square'); }, rattle(){ for(let i=0;i<4;i++) tone(900+i*120,.04,'square',.03,0,ac&&ac.currentTime+i*.05); },
 };
 /* ---------------- Music: a song per world mood. Tempo rises each level. ---------------- */
@@ -587,7 +593,23 @@ const SP_ROOT=[40,36,45,47];
 const SP_CH=[[64,67,71],[64,67,72],[64,69,72],[63,66,71]];
 const SP_WALK=[0,null,3,null,6,null,7,null,6,null,3,null,0,null,-1,null];
 const SP_MEL=[[71,72],[76,75],[72,69],[71,75],[83,84],[88,87],[84,81],[83,79]];
+// fab: K-pop power-up banger. Pumping octave bass, supersaw stabs, sparkle arps, four-on-the-floor (Am F C G)
+const FB_ROOT=[45,41,48,43], FB_CH=[[57,60,64],[57,60,65],[55,60,64],[55,59,62]];
+const FB_MEL=[
+  [76,0,76,0,79,0,76,0,74,0,72,0,74,0,76,0],[72,0,72,0,74,0,76,0,77,0,0,0,76,0,74,0],
+  [79,0,79,0,81,0,79,0,76,0,74,0,72,0,74,0],[74,0,0,74,0,0,79,0,0,0,81,0,83,0,84,0],
+  [81,0,79,0,76,0,79,0,81,0,0,84,0,81,0,79],[77,0,76,0,72,0,76,0,77,0,0,81,0,77,0,76],
+  [79,0,76,0,72,0,76,0,79,0,0,84,0,83,0,79],[83,0,0,83,0,0,81,0,79,0,0,0,86,0,88,0]];
 const SONGS = {
+  fab:{ bpm:132, play(st,bar,w,s16){
+    const b=bar%4, root=FB_ROOT[b], ch=FB_CH[b];
+    if(st%2===0) mnote(root-12+(st%4===2?12:0),w,s16*1.5,'sawtooth',.05,{cut:950,q:5,attack:.003});
+    if(st===0||st===3||st===6||st===10||st===12) ch.forEach(n=>{ mnote(n+12,w,s16*1.3,'sawtooth',.007,{cut:3400,detune:-14}); mnote(n+12,w,s16*1.3,'sawtooth',.007,{cut:3400,detune:14}); });
+    mnote(ch[st%3]+24+(st%8>=4?12:0),w,s16*.8,'square',.005,{cut:5200,send:.3});
+    const m=FB_MEL[bar%8][st]; if(m){ mnote(m,w,s16*1.8,'square',.016,{cut:3600,send:.25}); mnote(m+12,w,s16*1.1,'triangle',.008); }
+    if(st%4===0) perc(w,'kick',.095); if(st===4||st===12) perc(w,'clap',.05); perc(w,'hat',st%4===2?.018:.006);
+    if(bar%4===3 && st>=12) perc(w,'clap',.03);   // little drum fill into the next loop
+  }},
   dreamy:{ bpm:96, play(st,bar,w,s16,bpm){
     const [root,ch]=DR_CH[bar%8];
     if(st===0) ch.forEach(n=>{ mnote(n,w,s16*16.5,'sawtooth',.009,{attack:.45,cut:850}); mnote(n,w,s16*16.5,'sawtooth',.007,{attack:.5,cut:850,detune:9}); });
@@ -620,12 +642,19 @@ const SONGS = {
   }},
 };
 const Music = { timer:null, next:0, step:0, bpm:96, song:SONGS.dreamy,
-  start(L=1,name){ if(!audio()) return; musicBus(); this.stop();
+  start(L=1,name){ if(!audio()) return; musicBus(); this.stop(); this.fabOn=false;
     this.song=SONGS[name||(halloween?'spooky':themeOf(L).music)||'dreamy']; this.song.last=0;
     this.bpm=this.song.bpm+Math.min(40,CONFIG.levels.bpmPerLevel*(L-1))+(isBoss(L)&&!name?8:0);
     echo.delayTime.setValueAtTime(3*60/this.bpm/4, ac.currentTime);
     this.step=0; this.next=ac.currentTime+.1; this.timer=setInterval(()=>this.tick(),40); },
   stop(){ clearInterval(this.timer); this.timer=null; },
+  // power-up drop: swap to the banger, then ease back into the world's song on the next bar
+  fab(on){ if(!this.timer||!ac) return;
+    if(on && !this.fabOn){ this.fabOn=true; this.saved={song:this.song,bpm:this.bpm,step:this.step};
+      this.song=SONGS.fab; this.bpm=Math.max(SONGS.fab.bpm,this.saved.bpm+16); this.step=0; }
+    else if(!on && this.fabOn){ this.fabOn=false; const v=this.saved; this.song=v.song; this.bpm=v.bpm; this.step=Math.ceil(v.step/16)*16; }
+    else return;
+    echo.delayTime.setValueAtTime(3*60/this.bpm/4, ac.currentTime); },
   tick(){
     if(muted){ this.next=ac.currentTime+.05; return; }
     const s16=60/this.bpm/4, sw=this.song.swing||0;
