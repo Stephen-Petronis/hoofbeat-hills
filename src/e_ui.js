@@ -138,7 +138,8 @@ function showResults(){
     const p=players[0], place=st.indexOf(p), time=p.finishT, boss=isBoss(level);
     const key='best2.'+p.kind+'.'+level, prev=store.get(key,null), isNew=prev===null||time<prev;
     if(isNew){ store.set(key,time); if(rec.length>8) store.set('ghost2.'+p.kind+'.'+level, rec.join(',')); flash='NEW BEST TIME! YOUR GHOST WILL RACE YOU NEXT TIME.'; }
-    const cleared = boss ? place===0 : place<=1;
+    const mirrorBonus=!!themeOf(level).bonus && !halloween;
+    const cleared = boss ? place===0 : (place<=1 || mirrorBonus);
     let bonus=0;
     if(cleared){ save.maxLevel=Math.max(save.maxLevel,level+1); if(boss){ bonus=CONFIG.bossBonus; p.gems+=bonus; } }
     if(boss && cleared){ const bk=bossKind(level); if(!save.unlocked[bk]){ save.unlocked[bk]=true; flash=CONFIG.ponies[bk].name.toUpperCase()+' IS NOW PLAYABLE!'; } }
@@ -151,6 +152,7 @@ function showResults(){
       : 'Finish 1st or 2nd to unlock the next level. Time those landings!';
     stats.push(['TIME',fmt(time)],['BEST',fmt(isNew?time:prev)],['GEMS','+'+p.gems]);
     if(p.bestCombo>=2) stats.push(['BEST COMBO','×'+p.bestCombo]);
+    if(mirrorBonus) $('rMsg').textContent = place===0 ? 'YOU BEAT MIRROR WORLD! That is the hardest one. On to '+levelName(level+1)+'!' : 'Mirror World is the hardest level. Nice try! On to '+levelName(level+1)+'.';
     $('againBtn').textContent = cleared ? 'NEXT LEVEL ▶' : 'TRY AGAIN'; $('changeBtn').textContent='CHANGE RACER';
     if(place===0) for(let i=0;i<40;i++) particles.push({x:p.x-60+Math.random()*200,y:-cams[0].y+10+Math.random()*30,vx:(Math.random()-.5)*40,vy:Math.random()*20,life:2+Math.random(),c:RAINBOW[i%5],sz:2});
   }

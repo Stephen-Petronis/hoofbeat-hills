@@ -386,7 +386,7 @@ function buildTrack(L){
   let seed=L*7919+17;
   const R=()=>{ seed=(Math.imul(seed,1103515245)+12345)&0x7fffffff; return seed/0x7fffffff; };
   const ri=(a,b)=>a+Math.floor(R()*(b-a+1)), pick=a=>a[Math.floor(R()*a.length)];
-  const d=levelDifficulty(L), boss=isBoss(L), style=levelStyle(L);
+  const d=Math.min(1,levelDifficulty(L)+(RULE==='mirror'?.45:0)), boss=isBoss(L), style=levelStyle(L);
   trackStyle=style;
   const ob=CONFIG.difficulty.obstaclesMin+(1-CONFIG.difficulty.obstaclesMin)*d;   // chance each obstacle shows up
   const maybe=f=>{ if(R()<ob) f(); };
@@ -626,7 +626,32 @@ const FB_MEL=[
   [79,0,79,0,81,0,79,0,76,0,74,0,72,0,74,0],[74,0,0,74,0,0,79,0,0,0,81,0,83,0,84,0],
   [81,0,79,0,76,0,79,0,81,0,0,84,0,81,0,79],[77,0,76,0,72,0,76,0,77,0,0,81,0,77,0,76],
   [79,0,76,0,72,0,76,0,79,0,0,84,0,83,0,79],[83,0,0,83,0,0,81,0,79,0,0,0,86,0,88,0]];
+// silver: funky K-pop. Slap bass, clav stabs, brass hits, four-on-the-floor, and a vocal-ish lead singing the HELLO hook
+//   "Hel-lo, H-E-L-L-O, it's won-der-ful to see you a-gain, hel-lo"   (Dm9 · G9 · Cmaj7 · A7)
+const SV_ROOT=[38,43,36,45], SV_CH=[[62,65,69,72],[59,62,65,69],[60,64,67,71],[61,64,67,69]];
+const SV_BASS=[0,null,12,null,null,0,null,10,12,null,0,null,7,null,10,12];
+const SV_MEL=[
+  [[0,69,2],[2,74,5],[8,72,1],[10,72,1],[12,69,1],[14,67,1]],
+  [[0,69,6],[10,74,1],[12,72,1],[14,69,2]],
+  [[0,64,1],[2,67,1],[4,69,1],[6,67,1],[8,64,1],[10,72,1],[12,71,1],[14,69,2]],
+  [[0,67,6],[12,69,2],[14,74,8]],
+  [[8,72,1],[10,72,1],[12,74,1],[14,76,1]],
+  [[0,74,6],[8,77,1],[10,76,1],[12,74,2]],
+  [[0,76,1],[2,74,1],[4,72,1],[6,71,1],[8,72,2],[12,69,2]],
+  [[0,73,1],[2,76,1],[4,79,1],[6,81,4],[12,79,1],[14,76,1]]];
 const SONGS = {
+  silver:{ bpm:116, fixed:true, swing:.12, play(st,bar,w,s16){
+    const b=bar%4, root=SV_ROOT[b], ch=SV_CH[b];
+    const bo=SV_BASS[st]; if(bo!==null){ const pop=bo>=10; mnote(root+bo,w,s16*(pop?.7:1.1),'sawtooth',pop?.042:.06,{cut:pop?1500:700,q:7,attack:.003}); if(pop) mnote(root+bo+12,w,.05,'square',.012,{cut:3000}); }
+    if(st===2||st===6||st===10||st===11||st===14) ch.forEach((n,i)=>mnote(n+12,w+i*.004,s16*.45,'square',.0055,{cut:2800,q:2}));
+    if((b===0||b===2) && st===0) ch.forEach(n=>{ mnote(n,w,s16*3,'sawtooth',.009,{cut:2200,detune:-10,attack:.01}); mnote(n,w,s16*3,'sawtooth',.009,{cut:2200,detune:10,attack:.01}); });
+    if(b===3 && st===14) ch.forEach(n=>mnote(n+12,w,s16*1.2,'sawtooth',.01,{cut:3000}));
+    for(const [s,m,len] of SV_MEL[bar%8]) if(s===st){ const d=s16*len*1.05;
+      mnote(m,w,d,'sawtooth',.014,{cut:1700,q:3,vib:5.5,attack:.025,send:.3}); mnote(m+12,w,d,'triangle',.007,{vib:5.5,attack:.03}); mnote(m-12,w,d*.8,'sine',.006,{attack:.02}); }
+    if(bar%8>=6 && st%2===1) mnote(ch[(st>>1)%4]+24,w,s16*.6,'triangle',.006,{send:.4});
+    if(st%4===0) perc(w,'kick',.09); if(st===4||st===12) perc(w,'clap',.05); if(st===7||st===15) perc(w,'clap',.012);
+    perc(w,'hat',st%4===2?.02:st%2?.005:.009);
+  }},
   fab:{ bpm:132, play(st,bar,w,s16){
     const b=bar%4, root=FB_ROOT[b], ch=FB_CH[b];
     if(st%2===0) mnote(root-12+(st%4===2?12:0),w,s16*1.5,'sawtooth',.05,{cut:950,q:5,attack:.003});
@@ -670,7 +695,7 @@ const SONGS = {
 const Music = { timer:null, next:0, step:0, bpm:96, song:SONGS.dreamy,
   start(L=1,name){ if(!audio()) return; musicBus(); this.stop(); this.fabOn=false;
     this.song=SONGS[name||(halloween?'spooky':themeOf(L).music)||'dreamy']; this.song.last=0;
-    this.bpm=this.song.bpm+Math.min(40,CONFIG.levels.bpmPerLevel*(L-1))+(isBoss(L)&&!name?8:0);
+    this.bpm=this.song.fixed?this.song.bpm:(this.song.bpm+Math.min(40,CONFIG.levels.bpmPerLevel*(L-1))+(isBoss(L)&&!name?8:0));
     echo.delayTime.setValueAtTime(3*60/this.bpm/4, ac.currentTime);
     this.step=0; this.next=ac.currentTime+.1; this.timer=setInterval(()=>this.tick(),40); },
   stop(){ clearInterval(this.timer); this.timer=null; },

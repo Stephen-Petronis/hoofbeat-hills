@@ -13,9 +13,9 @@ const RULES = {
   hot:      { top:1.08, jump:1.12, tip:'HOT HOT HOOVES! EXTRA SPEED + BIG HOPS' },
   neon:     { top:1.06, tip:'NEON NIGHTS!' },
   space:    { grav:.33, jump:.8, tip:'SPACE! FLOAT FOREVER' },
-  mirror:   { mirror:true, flipEvery:8, flipTime:4, invert:true, tip:'SILVER MIRROR! UP IS DOWN... AND IT FLIPS INSIDE OUT!' },
+  mirror:   { mirror:true, flipEvery:8, flipTime:4, invert:true, tip:'MIRROR WORLD: SUPER HARD BONUS! UP IS DOWN!' },
   ice:      { accel:.55, coast:.35, lane:.5, tip:'SLIPPERY ICE! WHEEEE' },
-  rainbow:  { flipEvery:9, flipTime:4.5, tip:'RAINBOW ROAD! WATCH FOR FLIPS' },
+  rainbow:  { tip:'RAINBOW ROAD! RIDE THE RAINBOWS' },
   spiders:  { tip:'SILLY SPIDERS! DON\'T GET TICKLED' },
   castle:   { top:.86, tip:'CASTLE COURT: SLOW AND ROYAL' },
   city:     { tip:'BIG CITY! JUMP THE BUILDINGS' },
@@ -139,7 +139,7 @@ const NEW_WORLDS = {
       s.fillStyle='#b8ecff'; for(let dy=-11;dy<=-4;dy++){ const hw=Math.floor(Math.sqrt(121-dy*dy)); s.fillRect(px-hw,py+dy,hw,1); }
       s.fillStyle='#fff4a8'; for(let a=0;a<Math.PI*2;a+=.02){ const x=Math.round(px+Math.cos(a)*19), y=Math.round(py+Math.sin(a)*4.5-Math.cos(a)*2); if(Math.sin(a)<0 && Math.abs(x-px)<11 && Math.abs(y-py)<11) continue; s.fillRect(x,y,1,1); }
       s.fillStyle='#e6e4f6'; for(let dy=-4;dy<=4;dy++){ const hw=Math.floor(Math.sqrt(16-dy*dy)); s.fillRect(150-hw,24+dy,hw*2,1); } } },
-  mirror:{ name:'Silver Mirror', style:'classic', music:'funk', rule:'mirror', hurdle:'chrome', bramble:'shard', fx:'chrome', noCastle:true,
+  mirror:{ name:'Mirror World', style:'classic', music:'silver', bonus:true, rule:'mirror', hurdle:'chrome', bramble:'shard', fx:'chrome', noCastle:true,
     sky:r6('#3c4256','#555d74','#727b94','#939cb4','#b6bdd0','#dce1ec'), orbCol:['#ffffff','#eef1f8','#cfd6e6'],
     far:['#9aa3ba','#6c7590'], mid:['#c3cada','#8f99b2'], hedge:['#a8b1c8','#3c4458','#ffffff'],
     rib:{lit:'#ffffff',base:'#dfe4ee',shade:'#b7bfd0',edge:'#ffffff',dark:'#5c6680',dash:'#9ae8ff',face:'#7e889f',face2:'#aab3c8'},
@@ -188,7 +188,7 @@ const NEW_WORLDS = {
 // world order: levels walk through these, a boss every 4th level
 { const by=n=>THEMES.find(T=>T.name===n), N=NEW_WORLDS;
   const order=[by('Sunrise Meadow'),N.mushroom,by('Candy Cove'),by('Twilight Glen'),N.water,by('Crystal Peaks'),N.pumpkin,N.fire,
-    N.neon,N.space,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
+    N.neon,N.space,N.mirror,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
   THEMES.splice(0,THEMES.length,...order); }
 
 /* ---------- silly spiders: they bob up and down on threads. Touch one and it tickles you (slows you down) ---------- */
@@ -211,7 +211,7 @@ function drawSpider(s,cx,cy){
 }
 
 /* ---------- world effects: drawn behind the track ('back') and over everything ('front') ---------- */
-function worldFx(layer,camX){
+function worldFx(layer,camX,cy=0){
   const fx=TH.fx; if(!fx) return;
   ctx.save();
   if(fx==='bubbles'){
@@ -259,7 +259,13 @@ function worldFx(layer,camX){
   else if(fx==='chrome'){
     if(layer==='back'){ const farX=camX*.15; ctx.globalAlpha=.4;
       for(let sx=0;sx<W;sx++){ const wx=sx+farX, y=Math.round(104-Math.min(52,64*triw(wx*.006))-6*triw(wx*.04)), hgt=Math.round((110-y)*.8); ctx.fillStyle=TH.far[1]; ctx.fillRect(sx,0,1,hgt); }
-      ctx.globalAlpha=1; }
+      ctx.globalAlpha=1;
+      // the sky is a mirror: every horse runs upside down up there
+      const cx=Math.round(camX); for(const r of racers){ const sx=Math.round(r.x-cx); if(sx<-30||sx>W+30) continue;
+        const ground=laneY(r.laneY)-heightAt(r.x)+cy, feet=laneY(r.laneY)-r.alt+cy, ref=Math.round(8+Math.max(0,ground-feet)*.7);
+        const spr=r.state==='air'?r.spr.air:r.spr.run[(r.stride|0)%4];
+        ctx.save(); ctx.globalAlpha=r.isPlayer?.55:.35; ctx.translate(sx,ref); ctx.scale(1,-1); ctx.drawImage(spr,-16,-30); ctx.restore(); }
+      ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(0,Math.round(6+((t*12)|0)%2),W,1); }
     else { const u=((t*.35)%1.6)-.3, x0=Math.round(u*W*1.4); ctx.globalAlpha=.22; ctx.fillStyle='#ffffff';
       ctx.beginPath(); ctx.moveTo(x0,0); ctx.lineTo(x0+W*.12,0); ctx.lineTo(x0-W*.18,H); ctx.lineTo(x0-W*.3,H); ctx.fill(); ctx.globalAlpha=1;
       for(let i=0;i<10;i++){ const h=hash(i*61+((t*2)|0)*7); if((h>>>4)%3) continue; const x=h%W, y=(h>>>9)%H; ctx.fillStyle='#ffffff'; ctx.fillRect(x-2,y,5,1); ctx.fillRect(x,y-2,1,5); ctx.fillStyle='#9ae8ff'; ctx.fillRect(x,y,1,1); } }

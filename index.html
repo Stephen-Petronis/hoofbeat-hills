@@ -786,7 +786,7 @@ function buildTrack(L){
   let seed=L*7919+17;
   const R=()=>{ seed=(Math.imul(seed,1103515245)+12345)&0x7fffffff; return seed/0x7fffffff; };
   const ri=(a,b)=>a+Math.floor(R()*(b-a+1)), pick=a=>a[Math.floor(R()*a.length)];
-  const d=levelDifficulty(L), boss=isBoss(L), style=levelStyle(L);
+  const d=Math.min(1,levelDifficulty(L)+(RULE==='mirror'?.45:0)), boss=isBoss(L), style=levelStyle(L);
   trackStyle=style;
   const ob=CONFIG.difficulty.obstaclesMin+(1-CONFIG.difficulty.obstaclesMin)*d;   // chance each obstacle shows up
   const maybe=f=>{ if(R()<ob) f(); };
@@ -1026,7 +1026,32 @@ const FB_MEL=[
   [79,0,79,0,81,0,79,0,76,0,74,0,72,0,74,0],[74,0,0,74,0,0,79,0,0,0,81,0,83,0,84,0],
   [81,0,79,0,76,0,79,0,81,0,0,84,0,81,0,79],[77,0,76,0,72,0,76,0,77,0,0,81,0,77,0,76],
   [79,0,76,0,72,0,76,0,79,0,0,84,0,83,0,79],[83,0,0,83,0,0,81,0,79,0,0,0,86,0,88,0]];
+// silver: funky K-pop. Slap bass, clav stabs, brass hits, four-on-the-floor, and a vocal-ish lead singing the HELLO hook
+//   "Hel-lo, H-E-L-L-O, it's won-der-ful to see you a-gain, hel-lo"   (Dm9 · G9 · Cmaj7 · A7)
+const SV_ROOT=[38,43,36,45], SV_CH=[[62,65,69,72],[59,62,65,69],[60,64,67,71],[61,64,67,69]];
+const SV_BASS=[0,null,12,null,null,0,null,10,12,null,0,null,7,null,10,12];
+const SV_MEL=[
+  [[0,69,2],[2,74,5],[8,72,1],[10,72,1],[12,69,1],[14,67,1]],
+  [[0,69,6],[10,74,1],[12,72,1],[14,69,2]],
+  [[0,64,1],[2,67,1],[4,69,1],[6,67,1],[8,64,1],[10,72,1],[12,71,1],[14,69,2]],
+  [[0,67,6],[12,69,2],[14,74,8]],
+  [[8,72,1],[10,72,1],[12,74,1],[14,76,1]],
+  [[0,74,6],[8,77,1],[10,76,1],[12,74,2]],
+  [[0,76,1],[2,74,1],[4,72,1],[6,71,1],[8,72,2],[12,69,2]],
+  [[0,73,1],[2,76,1],[4,79,1],[6,81,4],[12,79,1],[14,76,1]]];
 const SONGS = {
+  silver:{ bpm:116, fixed:true, swing:.12, play(st,bar,w,s16){
+    const b=bar%4, root=SV_ROOT[b], ch=SV_CH[b];
+    const bo=SV_BASS[st]; if(bo!==null){ const pop=bo>=10; mnote(root+bo,w,s16*(pop?.7:1.1),'sawtooth',pop?.042:.06,{cut:pop?1500:700,q:7,attack:.003}); if(pop) mnote(root+bo+12,w,.05,'square',.012,{cut:3000}); }
+    if(st===2||st===6||st===10||st===11||st===14) ch.forEach((n,i)=>mnote(n+12,w+i*.004,s16*.45,'square',.0055,{cut:2800,q:2}));
+    if((b===0||b===2) && st===0) ch.forEach(n=>{ mnote(n,w,s16*3,'sawtooth',.009,{cut:2200,detune:-10,attack:.01}); mnote(n,w,s16*3,'sawtooth',.009,{cut:2200,detune:10,attack:.01}); });
+    if(b===3 && st===14) ch.forEach(n=>mnote(n+12,w,s16*1.2,'sawtooth',.01,{cut:3000}));
+    for(const [s,m,len] of SV_MEL[bar%8]) if(s===st){ const d=s16*len*1.05;
+      mnote(m,w,d,'sawtooth',.014,{cut:1700,q:3,vib:5.5,attack:.025,send:.3}); mnote(m+12,w,d,'triangle',.007,{vib:5.5,attack:.03}); mnote(m-12,w,d*.8,'sine',.006,{attack:.02}); }
+    if(bar%8>=6 && st%2===1) mnote(ch[(st>>1)%4]+24,w,s16*.6,'triangle',.006,{send:.4});
+    if(st%4===0) perc(w,'kick',.09); if(st===4||st===12) perc(w,'clap',.05); if(st===7||st===15) perc(w,'clap',.012);
+    perc(w,'hat',st%4===2?.02:st%2?.005:.009);
+  }},
   fab:{ bpm:132, play(st,bar,w,s16){
     const b=bar%4, root=FB_ROOT[b], ch=FB_CH[b];
     if(st%2===0) mnote(root-12+(st%4===2?12:0),w,s16*1.5,'sawtooth',.05,{cut:950,q:5,attack:.003});
@@ -1070,7 +1095,7 @@ const SONGS = {
 const Music = { timer:null, next:0, step:0, bpm:96, song:SONGS.dreamy,
   start(L=1,name){ if(!audio()) return; musicBus(); this.stop(); this.fabOn=false;
     this.song=SONGS[name||(halloween?'spooky':themeOf(L).music)||'dreamy']; this.song.last=0;
-    this.bpm=this.song.bpm+Math.min(40,CONFIG.levels.bpmPerLevel*(L-1))+(isBoss(L)&&!name?8:0);
+    this.bpm=this.song.fixed?this.song.bpm:(this.song.bpm+Math.min(40,CONFIG.levels.bpmPerLevel*(L-1))+(isBoss(L)&&!name?8:0));
     echo.delayTime.setValueAtTime(3*60/this.bpm/4, ac.currentTime);
     this.step=0; this.next=ac.currentTime+.1; this.timer=setInterval(()=>this.tick(),40); },
   stop(){ clearInterval(this.timer); this.timer=null; },
@@ -1106,9 +1131,9 @@ const RULES = {
   hot:      { top:1.08, jump:1.12, tip:'HOT HOT HOOVES! EXTRA SPEED + BIG HOPS' },
   neon:     { top:1.06, tip:'NEON NIGHTS!' },
   space:    { grav:.33, jump:.8, tip:'SPACE! FLOAT FOREVER' },
-  mirror:   { mirror:true, flipEvery:8, flipTime:4, invert:true, tip:'SILVER MIRROR! UP IS DOWN... AND IT FLIPS INSIDE OUT!' },
+  mirror:   { mirror:true, flipEvery:8, flipTime:4, invert:true, tip:'MIRROR WORLD: SUPER HARD BONUS! UP IS DOWN!' },
   ice:      { accel:.55, coast:.35, lane:.5, tip:'SLIPPERY ICE! WHEEEE' },
-  rainbow:  { flipEvery:9, flipTime:4.5, tip:'RAINBOW ROAD! WATCH FOR FLIPS' },
+  rainbow:  { tip:'RAINBOW ROAD! RIDE THE RAINBOWS' },
   spiders:  { tip:'SILLY SPIDERS! DON\'T GET TICKLED' },
   castle:   { top:.86, tip:'CASTLE COURT: SLOW AND ROYAL' },
   city:     { tip:'BIG CITY! JUMP THE BUILDINGS' },
@@ -1232,7 +1257,7 @@ const NEW_WORLDS = {
       s.fillStyle='#b8ecff'; for(let dy=-11;dy<=-4;dy++){ const hw=Math.floor(Math.sqrt(121-dy*dy)); s.fillRect(px-hw,py+dy,hw,1); }
       s.fillStyle='#fff4a8'; for(let a=0;a<Math.PI*2;a+=.02){ const x=Math.round(px+Math.cos(a)*19), y=Math.round(py+Math.sin(a)*4.5-Math.cos(a)*2); if(Math.sin(a)<0 && Math.abs(x-px)<11 && Math.abs(y-py)<11) continue; s.fillRect(x,y,1,1); }
       s.fillStyle='#e6e4f6'; for(let dy=-4;dy<=4;dy++){ const hw=Math.floor(Math.sqrt(16-dy*dy)); s.fillRect(150-hw,24+dy,hw*2,1); } } },
-  mirror:{ name:'Silver Mirror', style:'classic', music:'funk', rule:'mirror', hurdle:'chrome', bramble:'shard', fx:'chrome', noCastle:true,
+  mirror:{ name:'Mirror World', style:'classic', music:'silver', bonus:true, rule:'mirror', hurdle:'chrome', bramble:'shard', fx:'chrome', noCastle:true,
     sky:r6('#3c4256','#555d74','#727b94','#939cb4','#b6bdd0','#dce1ec'), orbCol:['#ffffff','#eef1f8','#cfd6e6'],
     far:['#9aa3ba','#6c7590'], mid:['#c3cada','#8f99b2'], hedge:['#a8b1c8','#3c4458','#ffffff'],
     rib:{lit:'#ffffff',base:'#dfe4ee',shade:'#b7bfd0',edge:'#ffffff',dark:'#5c6680',dash:'#9ae8ff',face:'#7e889f',face2:'#aab3c8'},
@@ -1281,7 +1306,7 @@ const NEW_WORLDS = {
 // world order: levels walk through these, a boss every 4th level
 { const by=n=>THEMES.find(T=>T.name===n), N=NEW_WORLDS;
   const order=[by('Sunrise Meadow'),N.mushroom,by('Candy Cove'),by('Twilight Glen'),N.water,by('Crystal Peaks'),N.pumpkin,N.fire,
-    N.neon,N.space,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
+    N.neon,N.space,N.mirror,N.ice,by('Cloud Summit'),N.rainbow,N.spider,N.castle,N.city,N.backwards,by('Spooky Hollow')];
   THEMES.splice(0,THEMES.length,...order); }
 
 /* ---------- silly spiders: they bob up and down on threads. Touch one and it tickles you (slows you down) ---------- */
@@ -1304,7 +1329,7 @@ function drawSpider(s,cx,cy){
 }
 
 /* ---------- world effects: drawn behind the track ('back') and over everything ('front') ---------- */
-function worldFx(layer,camX){
+function worldFx(layer,camX,cy=0){
   const fx=TH.fx; if(!fx) return;
   ctx.save();
   if(fx==='bubbles'){
@@ -1352,7 +1377,13 @@ function worldFx(layer,camX){
   else if(fx==='chrome'){
     if(layer==='back'){ const farX=camX*.15; ctx.globalAlpha=.4;
       for(let sx=0;sx<W;sx++){ const wx=sx+farX, y=Math.round(104-Math.min(52,64*triw(wx*.006))-6*triw(wx*.04)), hgt=Math.round((110-y)*.8); ctx.fillStyle=TH.far[1]; ctx.fillRect(sx,0,1,hgt); }
-      ctx.globalAlpha=1; }
+      ctx.globalAlpha=1;
+      // the sky is a mirror: every horse runs upside down up there
+      const cx=Math.round(camX); for(const r of racers){ const sx=Math.round(r.x-cx); if(sx<-30||sx>W+30) continue;
+        const ground=laneY(r.laneY)-heightAt(r.x)+cy, feet=laneY(r.laneY)-r.alt+cy, ref=Math.round(8+Math.max(0,ground-feet)*.7);
+        const spr=r.state==='air'?r.spr.air:r.spr.run[(r.stride|0)%4];
+        ctx.save(); ctx.globalAlpha=r.isPlayer?.55:.35; ctx.translate(sx,ref); ctx.scale(1,-1); ctx.drawImage(spr,-16,-30); ctx.restore(); }
+      ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(0,Math.round(6+((t*12)|0)%2),W,1); }
     else { const u=((t*.35)%1.6)-.3, x0=Math.round(u*W*1.4); ctx.globalAlpha=.22; ctx.fillStyle='#ffffff';
       ctx.beginPath(); ctx.moveTo(x0,0); ctx.lineTo(x0+W*.12,0); ctx.lineTo(x0-W*.18,H); ctx.lineTo(x0-W*.3,H); ctx.fill(); ctx.globalAlpha=1;
       for(let i=0;i<10;i++){ const h=hash(i*61+((t*2)|0)*7); if((h>>>4)%3) continue; const x=h%W, y=(h>>>9)%H; ctx.fillStyle='#ffffff'; ctx.fillRect(x-2,y,5,1); ctx.fillRect(x,y-2,1,5); ctx.fillStyle='#9ae8ff'; ctx.fillRect(x,y,1,1); } }
@@ -1916,7 +1947,7 @@ function renderView(focus,cam,y0){
   const sx0=shake>0?Math.round((Math.random()*2-1)*shake):0, sy0=shake>0?Math.round((Math.random()*2-1)*shake):0;
   ctx.save(); ctx.beginPath(); ctx.rect(0,y0,W,H); ctx.clip(); ctx.translate(sx0,y0+sy0);
   renderBackground(cam.x,cy);
-  worldFx('back',cam.x);
+  worldFx('back',cam.x,cy);
   if(!twoP && !demo) renderFab('back');
   ctx.save(); ctx.translate(0,cy);
   // track columns
@@ -2621,7 +2652,8 @@ function showResults(){
     const p=players[0], place=st.indexOf(p), time=p.finishT, boss=isBoss(level);
     const key='best2.'+p.kind+'.'+level, prev=store.get(key,null), isNew=prev===null||time<prev;
     if(isNew){ store.set(key,time); if(rec.length>8) store.set('ghost2.'+p.kind+'.'+level, rec.join(',')); flash='NEW BEST TIME! YOUR GHOST WILL RACE YOU NEXT TIME.'; }
-    const cleared = boss ? place===0 : place<=1;
+    const mirrorBonus=!!themeOf(level).bonus && !halloween;
+    const cleared = boss ? place===0 : (place<=1 || mirrorBonus);
     let bonus=0;
     if(cleared){ save.maxLevel=Math.max(save.maxLevel,level+1); if(boss){ bonus=CONFIG.bossBonus; p.gems+=bonus; } }
     if(boss && cleared){ const bk=bossKind(level); if(!save.unlocked[bk]){ save.unlocked[bk]=true; flash=CONFIG.ponies[bk].name.toUpperCase()+' IS NOW PLAYABLE!'; } }
@@ -2634,6 +2666,7 @@ function showResults(){
       : 'Finish 1st or 2nd to unlock the next level. Time those landings!';
     stats.push(['TIME',fmt(time)],['BEST',fmt(isNew?time:prev)],['GEMS','+'+p.gems]);
     if(p.bestCombo>=2) stats.push(['BEST COMBO','×'+p.bestCombo]);
+    if(mirrorBonus) $('rMsg').textContent = place===0 ? 'YOU BEAT MIRROR WORLD! That is the hardest one. On to '+levelName(level+1)+'!' : 'Mirror World is the hardest level. Nice try! On to '+levelName(level+1)+'.';
     $('againBtn').textContent = cleared ? 'NEXT LEVEL ▶' : 'TRY AGAIN'; $('changeBtn').textContent='CHANGE RACER';
     if(place===0) for(let i=0;i<40;i++) particles.push({x:p.x-60+Math.random()*200,y:-cams[0].y+10+Math.random()*30,vx:(Math.random()-.5)*40,vy:Math.random()*20,life:2+Math.random(),c:RAINBOW[i%5],sz:2});
   }

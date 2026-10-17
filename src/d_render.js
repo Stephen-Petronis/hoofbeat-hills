@@ -90,7 +90,7 @@ function renderView(focus,cam,y0){
   const sx0=shake>0?Math.round((Math.random()*2-1)*shake):0, sy0=shake>0?Math.round((Math.random()*2-1)*shake):0;
   ctx.save(); ctx.beginPath(); ctx.rect(0,y0,W,H); ctx.clip(); ctx.translate(sx0,y0+sy0);
   renderBackground(cam.x,cy);
-  worldFx('back',cam.x);
+  worldFx('back',cam.x,cy);
   if(!twoP && !demo) renderFab('back');
   ctx.save(); ctx.translate(0,cy);
   // track columns
