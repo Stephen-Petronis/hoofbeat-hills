@@ -40,7 +40,10 @@ const CONFIG = {
   // camera zoom: 1 = normal. Lower = further out. airMin is how far out the biggest jumps go
   // FABULOUS MODE (single player): grab a power-up and the world goes rainbow-glitter and the music drops into a K-pop banger
   fab: { time: 6.5, fade: 1.6 },
-  zoom: { airStart: 12, airRange: 190, airMin: .42, uphill: 1.12, slowmo: .6, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
+  // STAR TURBO: fills up slowly; when full, tap STAR to blast off golden and unstoppable
+  star: { time: 5.5, speed: 1.75, gem: .009, bigGem: .04, dive: .07, item: .12, combo: .035, flip: .09, smooth: .025 },
+  flip: { window: .32, time: .55, boost: 45, gems: 3 },   // double-tap jump in the air for a flippy flop
+  zoom: { airStart: 12, airRange: 230, airMin: .32, peakStart: 70, peakRange: 220, peakMin: .55, uphill: 1.12, slowmo: .6, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you
   rubberBand: [0.86, 1.06],
   items: { magnetTime: 8, magnetRange: 70, superTime: 3.2, superSpeed: 1.35 },
@@ -342,13 +345,14 @@ function themeAssets(i){
     x=>{ x.fillStyle=T.hedge[2]; [[5,7],[11,4],[15,8],[9,10],[18,11]].forEach(([a,b])=>x.fillRect(a,b,1,1)); }, T.hedge[1]);
   const bush=happy=>makeSprite(26,14,[T.fg[2]],x=>{ circ(x,T.fg[2],[[7,9,6],[14,6.5,7],[20,9,5.5]]); x.fillRect(5,9,18,5); },
     x=>{ if(happy) smiley(x,12,5,3); else { x.fillStyle=T.spooky?'#6e5440':'#ff8fc8'; [[8,6],[14,3],[19,7],[11,9]].forEach(([a,b])=>x.fillRect(a,b,1,1)); x.fillStyle=T.spooky?'#ff9a3a':'#fff6fb'; x.fillRect(16,10,1,1); } }, T.fg[3]);
-  return ASSET[i]={ sky:makeSky(T), hedge, bush:bush(false), happyBush:bush(!T.spooky),
-    trees: T.spooky ? [deadTree(16,24,false),deadTree(18,24,false),deadTree(16,24,false)] : T.trees.map(midTree),
-    big: T.spooky ? [deadTree(22,30,true),deadTree(24,30,true),deadTree(22,30,false)] : T.trees.map(happyTree),
+  const sky=makeSky(T); if(T.skyFx) T.skyFx(sky.getContext('2d'));
+  return ASSET[i]={ sky, hedge, bush:bush(false), happyBush:bush(!T.spooky),
+    trees: T.treesMk ? T.treesMk(T) : T.spooky ? [deadTree(16,24,false),deadTree(18,24,false),deadTree(16,24,false)] : T.trees.map(midTree),
+    big: T.bigMk ? T.bigMk(T) : T.spooky ? [deadTree(22,30,true),deadTree(24,30,true),deadTree(22,30,false)] : T.trees.map(happyTree),
     castle: T.spooky ? castleHaunted : castleSpr };
 }
-let TH=THEMES[0], AS=themeAssets(0), RIB=TH.rib;
-function setThemeIndex(i){ TH=THEMES[i]; AS=themeAssets(i); RIB=TH.rib; }
+let TH=THEMES[0], AS=themeAssets(0), RIB=TH.rib, WR={grav:1,jump:1,top:1,accel:1,coast:1,lane:1,bounce:0,sticky:0};
+function setThemeIndex(i){ TH=THEMES[i]; AS=themeAssets(i); RIB=TH.rib; WR=worldRules(TH); }
 const setTheme = L => setThemeIndex((L-1)%THEMES.length);
 
 /* ---------------- Track: generated per level, harder each time ---------------- */
@@ -376,7 +380,8 @@ function levelSpeed(L){
   return Math.min(LV.maxSpeed, 1 + ch*LV.speedPerChapter + k*LV.speedPerLevel);
 }
 function buildTrack(L){
-  HT.fill(0); for(const a of [goos,pads,shrooms,hurdles,brambles,clouds,gems,orbs]) a.length=0;
+  HT.fill(0); for(const a of [goos,pads,shrooms,hurdles,brambles,clouds,gems,orbs,spiders]) a.length=0;
+  const RULE=themeOf(L).rule||'none';
   let seed=L*7919+17;
   const R=()=>{ seed=(Math.imul(seed,1103515245)+12345)&0x7fffffff; return seed/0x7fffffff; };
   const ri=(a,b)=>a+Math.floor(R()*(b-a+1)), pick=a=>a[Math.floor(R()*a.length)];
@@ -399,10 +404,18 @@ function buildTrack(L){
   else pats=['rolls','kick','kick','slalom','table','moguls','shroom','fences','kickGoo','cloud'];
   if(style==='spooky') pats.push('kickGoo','rolls');
   if(boss && style==='classic') pats.push('cloud','cloud');
+  // each world's rule shapes its track
+  if(RULE==='pumpkins') pats.push('pumpkinRow','pumpkinRow','fences','slalom');
+  if(RULE==='city') pats.push('pumpkinRow','fences','swerve');
+  if(RULE==='bouncy') pats.push('shroom','shroom','moguls');
+  if(RULE==='sticky') pats.push('kickGoo','kickGoo');
+  if(RULE==='neon'||RULE==='rainbow') pats.push('bigroll','downramp');
+  if(RULE==='space') pats.push('massif','peak','skyhop');
+  pats.push('skyhop');   // cloud-hopping sky route everywhere
   if(d>.6) pats=pats.filter(p=>p!=='meadow');
   // giant mountains with secret cloud paths: from chapter 2 on mountain worlds, and later everywhere but Spooky Hollow
-  if(style==='mountains' && d>=.3) pats.push('massif','massif');
-  else if(d>=.5 && style!=='spooky') pats.push('massif');
+  if(style==='mountains' && d>=.12) pats.push('massif','massif');
+  else if(d>=.35 && style!=='spooky') pats.push('massif');
   let lastPat='';
   while(x<FINISH_X-560){
     let p=pick(pats); if(p===lastPat) p=pick(pats); lastPat=p;
@@ -423,6 +436,15 @@ function buildTrack(L){
     else if(p==='moguls'){ const n=ri(4,6),w=ri(55,65),h=ri(8,11); moguls(x,n,w,h); for(let k=1;k<n;k++){ if(R()<.15+.55*d){ const l=ri(0,2); fence(x+k*w,[l]); gem(x+k*w,l,26); } else gem(x+k*w-w/2,ri(0,2),14); } x+=n*w; }
     else if(p==='shroom'){ const l=ri(0,2); shrooms.push({x,lane:l}); maybe(()=>fence(x+ri(60,80),d>.3?ALL:[l])); gem(x+40,l,40); gem(x+70,l,52,false,true);
       if(R()<.2+.5*d) thorns(x+ri(95,110),ri(30,50),ALL); x+=190; }
+    else if(p==='pumpkinRow'){ const n=ri(3,5), g=ri(72,96)-Math.round(10*d); for(let i=0;i<n;i++){ fence(x+i*g,R()<.6?ALL:some()); gem(x+i*g,ri(0,2),30); } x+=n*g+60; }
+    else if(p==='skyhop'){ // ramp up, then hop cloud to cloud, each one higher. Miss and you drop to the low road (thorns + fences)
+      const w=ri(90,110),h=ri(36,46),dr=ri(70,90); kick(x,w,h,dr); const lip=x+w; let cx0=lip+ri(40,60), ch=ri(58,66); const n=ri(3,4+Math.round(2*d)), gl=ri(0,2);
+      for(let i=0;i<n;i++){ const cl=ri(70,100)-Math.round(20*d); clouds.push({x:cx0,len:cl,h:ch,hop:true});
+        for(let k=0;k<3;k++) gem(cx0+12+(cl-24)*k/2,gl,ch+9,true,i===n-1&&k===1);
+        if(i===n-1 && R()<.6) orb(cx0+cl+30,ri(0,2),ch+30,true);
+        cx0+=cl+ri(40,58)+Math.round(12*d); ch+=ri(8,16); }
+      const lowS=lip+dr+10; maybe(()=>thorns(lowS,ri(40,70),ALL)); maybe(()=>fence(lowS+ri(130,170),some())); if(d>.3) maybe(()=>fence(lowS+ri(240,280),some()));
+      x=Math.max(cx0,lowS+300)+40; }
     else if(p==='fences'){ fence(x,d>.5?ALL:some()); const g=ri(90,125)-Math.round(20*d); maybe(()=>fence(x+g,d>.5?ALL:some())); gem(x,1,26); gem(x+g,1,26);
       if(d>.4&&R()<.6){ fence(x+2*g,some()); } x+=2*g+60; }
     else if(p==='cloud'){ const w=ri(90,110),h=ri(36,44),dr=ri(70,90); kick(x,w,h,dr); const lip=x+w, cx0=lip+ri(30,50), cl=ri(150,220), ch=ri(56,64);
@@ -467,7 +489,7 @@ function buildTrack(L){
       maybe(()=>fence(xs[6]+ri(30,60),some()));
       x=xs[7]+60; }
     else if(p==='massif'){ // two huge peaks and a deep valley. Low road: obstacles. High road: a secret cloud path between the summits
-      const sc=.8+.7*d, h1=Math.round(ri(190,240)*sc), h2=Math.round(ri(200,260)*sc);
+      const sc=.9+.9*d, h1=Math.round(ri(190,240)*sc), h2=Math.round(ri(200,260)*sc);
       const xs=profile(x,[[ri(240,300),Math.round(h1*.5)],[ri(70,100),Math.round(h1*.45)],[ri(200,260),h1],[ri(40,60),h1+4],[ri(220,280),ri(10,25)],[ri(150,210),ri(10,25)],
         [ri(240,300),Math.round(h2*.55)],[ri(60,90),Math.round(h2*.5)],[ri(180,230),h2],[ri(40,60),h2+4],[ri(260,320),ri(20,40)],[ri(90,110),0]]);
       const v0=xs[4], v1=xs[5];
@@ -488,8 +510,11 @@ function buildTrack(L){
     clouds.push({x:ac.x,len:ac.len,h}); for(let i=0;i<4;i++) gem(ac.x+18+(ac.len-36)*i/3,ac.lane,h+9,true); }
   for(const ap of autoPaths){ const s0=ap.top+24, h=Math.round(heightAt(ap.top))+8; let e=s0+40;
     while(e<ap.until && heightAt(e)<h-12) e+=4; if(ap.short) e=Math.min(e,s0+260);
-    const len=e-s0; if(len<80) continue; clouds.push({x:s0,len,h,secret:true});
-    const n=Math.floor(len/40); for(let i=0;i<n;i++) gem(s0+20+i*40,ap.lane,h+9,true,i===Math.floor(n/2)); }
+    const len=e-s0; if(len<80) continue;
+    // split the secret path into separate clouds with gaps, drifting a little higher: hop across with good timing
+    let cx=s0, ch=h+6, k=0; while(cx<e-40){ const cl=Math.min(e-cx,90+(k%2)*30); clouds.push({x:cx,len:cl,h:ch,secret:true,hop:true});
+      gem(cx+cl/2,ap.lane,ch+9,true,k===2); gem(cx+cl/2+18,ap.lane,ch+9,true); cx+=cl+50; ch+=6+(k%3)*5; k++; } }
+  if(RULE==='spiders'){ for(let sx=700;sx<FINISH_X-300;sx+=ri(200,340)) spiders.push({x:sx,lane:ri(0,2),ph:R()*6,hitT:0}); }
   for(const g of gems){ g.alt=(g.abs?0:heightAt(g.x))+g.off; g.taken=false; g.pull=null; }
   for(const o of orbs){ o.alt=(o.abs?0:heightAt(o.x))+o.off; o.taken=false; }
 }

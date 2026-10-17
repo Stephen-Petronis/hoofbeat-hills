@@ -23,10 +23,13 @@ function renderBackground(camX,cy){
   }
   const fy=Math.round(cy*.3), farX=camX*.15;
   const triw=u=>1-2*Math.abs(u-Math.floor(u)-.5);
-  const farY=wx=>T.peaks ? Math.round(102-30*triw(wx*.008)-7*triw(wx*.027+.3)) : Math.round(92-15*(.55+.45*Math.sin(wx*.011))-7*Math.sin(wx*.027+2));
+  const farY=T.farFn ? T.farFn : wx=>T.peaks ? Math.round(102-30*triw(wx*.008)-7*triw(wx*.027+.3)) : Math.round(92-15*(.55+.45*Math.sin(wx*.011))-7*Math.sin(wx*.027+2));
   for(let sx=0;sx<W;sx++){ const y=farY(sx+farX)+fy; ctx.fillStyle=T.far[0]; ctx.fillRect(sx,y,1,1); ctx.fillStyle=T.far[1]; ctx.fillRect(sx,y+1,1,H-y);
-    if(T.peaks && y<84+fy){ ctx.fillStyle='#ffffff'; ctx.fillRect(sx,y,1,Math.min(4,84+fy-y)); } }
-  for(let k=Math.floor(farX/700)-1;k<=Math.floor((farX+W)/700)+1;k++){ const wx=k*700+260; ctx.drawImage(A.castle,Math.round(wx-farX)-17,farY(wx)+fy-27); }
+    if(T.peaks && y<84+fy){ ctx.fillStyle='#ffffff'; ctx.fillRect(sx,y,1,Math.min(4,84+fy-y)); }
+    if(T.capCol && y<T.capY+fy){ ctx.fillStyle=T.capCol; ctx.fillRect(sx,y,1,Math.min(5,T.capY+fy-y)); }
+    if(T.city){ const wx=Math.floor(sx+farX), b=Math.floor(wx/18), c=wx-b*18; if(c>=3 && c<=15 && c%3===1) for(let yy=y+4;yy<H;yy+=5){ const q=hash(b*97+yy*3+c); if(q%3===0){ ctx.fillStyle=T.win[q%T.win.length]; ctx.fillRect(sx,yy,1,2); } } } }
+  const CE=T.castleEvery||700;
+  if(!T.noCastle) for(let k=Math.floor(farX/CE)-1;k<=Math.floor((farX+W)/CE)+1;k++){ const wx=k*CE+260; ctx.drawImage(A.castle,Math.round(wx-farX)-17,farY(wx)+fy-27); }
   const my=Math.round(cy*.5), mwx=camX*.35;
   const midY=wx=>Math.round(113-14*Math.max(0,Math.sin(wx*.016))-6*(.5+.5*Math.sin(wx*.041+1)));
   for(let sx=0;sx<W;sx++){ const y=midY(sx+mwx)+my; ctx.fillStyle=T.mid[0]; ctx.fillRect(sx,y,1,1); ctx.fillStyle=T.mid[1]; ctx.fillRect(sx,y+1,1,H-y); }
@@ -86,13 +89,14 @@ function renderView(focus,cam,y0){
   const sx0=shake>0?Math.round((Math.random()*2-1)*shake):0, sy0=shake>0?Math.round((Math.random()*2-1)*shake):0;
   ctx.save(); ctx.beginPath(); ctx.rect(0,y0,W,H); ctx.clip(); ctx.translate(sx0,y0+sy0);
   renderBackground(cam.x,cy);
+  worldFx('back',cam.x);
   if(!twoP && !demo) renderFab('back');
   ctx.save(); ctx.translate(0,cy);
   // track columns
   for(let sx=0;sx<W;sx++){
     const wx=cx+sx, h=Math.round(heightAt(wx)), s=slopeAt(wx), top=BAND_TOP-h, bot=BAND_BOT-h;
     if(h>0){ ctx.fillStyle=RIB.face; ctx.fillRect(sx,bot,1,h); ctx.fillStyle=RIB.face2; ctx.fillRect(sx,bot,1,Math.min(2,h));
-      for(let y=bot+3;y<BAND_BOT;y++){ const q=hash(wx*131+y*7)%31; if(h>36 && (y-bot+(hash(wx>>3)%7))%18===9){ctx.fillStyle=RIB.face2;ctx.fillRect(sx,y,1,1);} else if(q===0){ctx.fillStyle=TH.hedge[2];ctx.fillRect(sx,y,1,1);} else if(q===1){ctx.fillStyle='#fff6fb';ctx.fillRect(sx,y,1,1);} else if(q===2){ctx.fillStyle='#c9a6ff';ctx.fillRect(sx,y,1,1);} } }
+      for(let y=bot+3;y<BAND_BOT;y++){ const q=hash(wx*131+y*7)%(y-bot<30?31:140); if(h>36 && (y-bot+(hash(wx>>3)%7))%18===9){ctx.fillStyle=RIB.face2;ctx.fillRect(sx,y,1,1);} else if(q===0){ctx.fillStyle=TH.hedge[2];ctx.fillRect(sx,y,1,1);} else if(q===1){ctx.fillStyle='#fff6fb';ctx.fillRect(sx,y,1,1);} else if(q===2){ctx.fillStyle='#c9a6ff';ctx.fillRect(sx,y,1,1);} } }
     ctx.fillStyle = s>0.28?RIB.lit : s<-0.28?RIB.shade : RIB.base; ctx.fillRect(sx,top,1,bot-top);
     ctx.fillStyle=RIB.edge; ctx.fillRect(sx,top,1,1);
     ctx.fillStyle=RIB.dark; ctx.fillRect(sx,bot-1,1,1);
@@ -114,6 +118,7 @@ function renderView(focus,cam,y0){
   const list=[];
   const vis=(x,m=24)=>x-cx>-m && x-cx<W+m;
   for(const m of shrooms) if(vis(m.x)) list.push({y:laneY(m.lane),m});
+  for(const s of spiders) if(vis(s.x)) list.push({y:laneY(s.lane)-.15,spider:s});
   for(const h of hurdles) if(vis(h.x)) for(const l of h.lanes) list.push({y:laneY(l)-.2,fence:h,l});
   for(const b of brambles){ if(b.x+b.len<cx-20||b.x>cx+W+20) continue; for(const l of b.lanes) list.push({y:laneY(l)-.3,br:b,l}); }
   for(const c of clouds){ if(c.x+c.len<cx-30||c.x>cx+W+30) continue; for(const l of ALL) list.push({y:laneY(l)-.45,cl:c,l}); }
@@ -124,8 +129,9 @@ function renderView(focus,cam,y0){
   if(freeMode && !demo){ for(const f of friends) if(vis(f.x,40)) list.push({y:laneY(f.laneY)-.01,r:f}); for(const o of worldOrbs) if(!o.taken && vis(o.x)) list.push({y:laneY(o.ly)+.05,world:o}); }
   list.sort((a,b)=>a.y-b.y);
   for(const it of list){
-    if(it.fence){ const x=it.fence.x, sx=Math.round(x-cx); ctx.drawImage(TH.spooky?hurdleSpooky:hurdleSpr,sx-6,laneY(it.l)-Math.round(heightAt(x))-14); }
-    else if(it.br){ const b=it.br; for(let x=b.x;x<=b.x+b.len-6;x+=7){ const sx=Math.round(x-cx); if(sx<-16||sx>W+2) continue; const j=hash(x+it.l)%3; ctx.drawImage(TH.spooky?brambleSpooky:brambleSpr,sx-3,laneY(it.l)-Math.round(heightAt(x+4))-10+(j===0?1:0)); } }
+    if(it.fence){ const x=it.fence.x, sx=Math.round(x-cx), hs=hurdleSprite(); ctx.drawImage(hs,sx-(hs.width>>1),laneY(it.l)-Math.round(heightAt(x))-hs.height+1); }
+    else if(it.spider) drawSpider(it.spider,cx,cy);
+    else if(it.br){ const b=it.br; for(let x=b.x;x<=b.x+b.len-6;x+=7){ const sx=Math.round(x-cx); if(sx<-16||sx>W+2) continue; const j=hash(x+it.l)%3; const bs=brambleSprite(); ctx.drawImage(bs,sx-3,laneY(it.l)-Math.round(heightAt(x+4))-bs.height+2+(j===0?1:0)); } }
     else if(it.cl){ const c=it.cl; for(let x=c.x-4;x<=c.x+c.len-16;x+=14){ const sx=Math.round(x-cx); if(sx<-26||sx>W+2) continue; ctx.drawImage(cloudPlat,sx,laneY(it.l)-c.h-3+(hash(x+it.l)%2)); }
       if(c.secret && it.l===1) for(let k=0;k<5;k++){ const px=Math.round(c.x+((k*53+t*40)%Math.max(40,c.len))-cx), py=laneY(0)-c.h-8-((k*7)%10); if(((t*6+k)|0)%3) continue; ctx.fillStyle='#fff4a8'; ctx.fillRect(px-1,py,3,1); ctx.fillRect(px,py-1,1,3); } }
     else if(it.gem){ const g=it.gem, bob=Math.round(Math.sin(t*4+g.x*.1)*1.2), sx=Math.round(g.x-cx);
@@ -146,6 +152,7 @@ function renderView(focus,cam,y0){
   renderForeground(cam.x);
   if(freeMode && !demo) renderFreeOverlay(cx,'world');
   ctx.restore();
+  worldFx('front',cam.x);
   if(!twoP && !demo) renderFab('front');
   ctx.restore();
 }
@@ -156,23 +163,24 @@ function renderFab(layer){
   ctx.save();
   if(layer==='back'){
     const g=ctx.createLinearGradient(0,0,W,H*.6);
-    for(let i=0;i<=6;i++) g.addColorStop(i/6,`hsl(${(t*140+i*55)%360},95%,72%)`);
+    const gold=fabKind==='gold';
+    for(let i=0;i<=6;i++) g.addColorStop(i/6,gold?`hsl(${42+12*Math.sin(t*6+i)},100%,${62+12*Math.sin(t*4+i*1.3)}%)`:`hsl(${(t*140+i*55)%360},95%,72%)`);
     ctx.globalCompositeOperation='screen'; ctx.globalAlpha=.42*I; ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
     ctx.globalAlpha=.16*I*beat*beat; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
     ctx.globalCompositeOperation='source-over';
     // spinning light rays from the sun spot
-    ctx.globalAlpha=.13*I; ctx.fillStyle='#fff6fb'; const ox=W*.72, oy=H*.25, R=Math.max(W,H);
+    ctx.globalAlpha=(gold?.2:.13)*I; ctx.fillStyle=gold?'#fff4a8':'#fff6fb'; const ox=W*.72, oy=H*.25, R=Math.max(W,H);
     for(let k=0;k<10;k++){ const a=t*.6+k*Math.PI/5; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+Math.cos(a)*R,oy+Math.sin(a)*R); ctx.lineTo(ox+Math.cos(a+.13)*R,oy+Math.sin(a+.13)*R); ctx.fill(); }
   }
   ctx.globalAlpha=I;
-  const n=layer==='back'?Math.round(W*.16):Math.round(W*.06), cols=['#ffffff','#fff4a8','#ffb3d6','#a6f2ff','#c9b2ff'];
+  const n=layer==='back'?Math.round(W*.16):Math.round(W*.06), cols=fabKind==='gold'?['#ffffff','#fff4a8','#ffd76a','#ffe9a8','#ffb347']:['#ffffff','#fff4a8','#ffb3d6','#a6f2ff','#c9b2ff'];
   for(let i=0;i<n;i++){ const slot=Math.floor(t*3+i*.37), h=hash(i*131+slot*7+(layer==='back'?0:999)), ph=(t*3+i*.37)%1;
     if(ph>.75) continue; const x=h%W, y=(h>>>10)%H, big=ph>.2&&ph<.55&&(h&3)===0; ctx.fillStyle=cols[(h>>>20)%5];
     ctx.fillRect(x,y,1,1); if(ph>.1&&ph<.65){ ctx.fillRect(x-1,y,3,1); ctx.fillRect(x,y-1,1,3); }
     if(big){ ctx.fillRect(x-2,y,5,1); ctx.fillRect(x,y-2,1,5); } }
   if(layer==='front'){ const th=Math.max(2,Math.round(2*W/320)), seg=8*W/320;
-    for(let x=0;x<W;x+=seg){ ctx.fillStyle=`hsl(${(x*2-t*300)%360+360},95%,70%)`; ctx.fillRect(x,0,seg,th); ctx.fillRect(W-x-seg,H-th,seg,th); }
-    for(let y=0;y<H;y+=seg){ ctx.fillStyle=`hsl(${(y*2-t*300)%360+360},95%,70%)`; ctx.fillRect(0,H-y-seg,th,seg); ctx.fillRect(W-th,y,th,seg); } }
+    for(let x=0;x<W;x+=seg){ ctx.fillStyle=fabKind==='gold'?`hsl(${45+10*Math.sin(x*.05-t*8)},100%,${65+15*Math.sin(x*.07-t*10)}%)`:`hsl(${(x*2-t*300)%360+360},95%,70%)`; ctx.fillRect(x,0,seg,th); ctx.fillRect(W-x-seg,H-th,seg,th); }
+    for(let y=0;y<H;y+=seg){ ctx.fillStyle=fabKind==='gold'?`hsl(${45+10*Math.sin(y*.05-t*8)},100%,${65+15*Math.sin(y*.07-t*10)}%)`:`hsl(${(y*2-t*300)%360+360},95%,70%)`; ctx.fillRect(0,H-y-seg,th,seg); ctx.fillRect(W-th,y,th,seg); } }
   ctx.restore();
 }
 function drawPonyAt(S,spr,sx,feet,a,hat){
@@ -188,10 +196,11 @@ function drawRacer(r,cx){
   if(r.state!=='ground'||r.cloud){ const gy=Math.round(base-heightAt(r.x)); ctx.fillStyle='#4f9f7d'; ctx.fillRect(sx-6,gy-1,12,2); ctx.fillRect(sx-4,gy-2,8,1); }
   let spr, a;
   if(r.state==='tumble'){ spr=S.run[0]; a=r.spin; }
-  else if(r.state==='air'){ spr = (S.airDown && (r.gliding ? (t*7|0)%2 : r.vz<0)) ? S.airDown : S.air; a=r.angle; }
+  else if(r.state==='air'){ spr = (S.airDown && (r.gliding ? (t*7|0)%2 : r.vz<0)) ? S.airDown : S.air; a=r.angle+(r.flipA||0); }
   else { spr=S.run[(r.stride|0)%4]; a=r.angle; }
   a=Math.round(a/(Math.PI/12))*(Math.PI/12);
   if(r.turboT>0 && ((t*14)|0)%2){ ctx.fillStyle='rgba(255,110,40,.4)'; ctx.fillRect(sx-15,Math.round(feet)-28,30,28); }
+  if(r.starT>0){ ctx.fillStyle=((t*16)|0)%2?'rgba(255,215,106,.5)':'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(sx,Math.round(feet)-13,18+Math.sin(t*20)*2,0,7); ctx.fill(); }
   if(r.superT>0 && ((t*12)|0)%2){ ctx.fillStyle='rgba(255,215,106,.35)'; ctx.fillRect(sx-15,Math.round(feet)-28,30,28); }
   if(r.hovering||r.phaseT>0){ ctx.globalAlpha=.55+.15*Math.sin(t*10); drawPonyAt(S,spr,sx,feet,a,r.hat); ctx.globalAlpha=1;
     ctx.fillStyle=r.phaseT>0?'#cfe0ff':'#9affb0'; for(let k=0;k<6;k++){ const an=t*4+k*1.05; ctx.fillRect(Math.round(sx+Math.cos(an)*14),Math.round(feet-14+Math.sin(an)*9),1,1); } }
@@ -205,6 +214,13 @@ function drawRacer(r,cx){
 function render(){
   if(mode==='photo'){ renderPhoto(); return; }
   if(mode==='cutscene'){ renderCutscene(); return; }
+  if(mode==='dance'){ renderDance(); return; }
+  const flip=!twoP && !demo && Math.abs(flipV-1)>.002;
+  if(flip){ ctx.save(); ctx.translate(W/2,0); ctx.scale(Math.abs(flipV)<.04?(flipV<0?-.04:.04):flipV,1); ctx.translate(-W/2,0); }
+  try{ renderMain(); } finally { if(flip) ctx.restore(); }
+  if(freeMode && !demo) renderFreeOverlay(cams[0].x,'screen');
+}
+function renderMain(){
   if(twoP && !demo){ renderView(players[0],cams[0],0); renderView(players[1],cams[1],H); }
   else if(!demo && Math.abs(viewZoom-1)>.005){
     // zoomed: draw the world into a bigger (or smaller) view, then scale it onto the screen
@@ -217,7 +233,6 @@ function render(){
     ctx.drawImage(zoomCv,0,0,w,h,0,0,W,H);
   }
   else renderView(players[0],cams[0],0);
-  if(freeMode && !demo) renderFreeOverlay(cams[0].x,'screen');
 }
 
 /* ---------------- Photo mode ---------------- */
@@ -249,8 +264,9 @@ function drawTrajectory(r,cx){
   const P=r.P, base=laneY(r.laneY), dt=.035, m=viewZoom<.8?Math.max(1,Math.round(1/viewZoom)):1;   // chunkier dots when zoomed way out
   const sim=(dive,col)=>{ let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
     for(let i=0;i<180;i++){
-      if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*dt;
-      x+=vx*dt; a+=vz*dt; const g=heightAt(x);
+      if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*WR.grav*dt;
+      const pa=a; x+=vx*dt; a+=vz*dt; let g=heightAt(x);
+      for(const c of clouds) if(vz<0 && pa>=c.h && a<=c.h && x>=c.x && x<=c.x+c.len){ g=c.h; break; }
       if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; const X=(dx,dy,w,h)=>ctx.fillRect(sx+dx*m,sy+dy*m,w*m,h*m);
         X(-2,-2,1,1); X(2,-2,1,1); X(-1,-1,3,1); X(0,-1,1,1); X(-2,0,1,1); X(2,0,1,1); return; }
       if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2*m,2*m); }

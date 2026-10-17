@@ -14,14 +14,25 @@
   color-scheme: dark;
 }
 html,body{height:100%}
-body{background:var(--night);color:var(--cream);font-family:var(--f-body);font-size:16px;overflow:hidden;
+body{background:radial-gradient(130% 90% at 50% -10%,#f27ad0 0%,#d24fb8 34%,#b03aa8 66%,#8a2a92 100%) fixed;color:var(--cream);font-family:var(--f-body);font-size:16px;overflow:hidden;
   touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
+/* the whole page: fuchsia candy plastic with a slow shine sweeping across + tiny glitter */
+body::before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.16) 47%,rgba(255,255,255,.32) 50%,rgba(255,255,255,.16) 53%,transparent 60%) no-repeat;
+  background-size:60% 100%;animation:pageShine 7s ease-in-out infinite}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background:radial-gradient(circle,#fff 0 1px,transparent 1.5px) 0 0/37px 41px,radial-gradient(circle,#ffe4f6 0 1px,transparent 1.5px) 19px 23px/53px 47px;
+  animation:twinkle 3s steps(3) infinite}
+@keyframes pageShine{0%{background-position:-120% 0}55%,100%{background-position:260% 0}}
+@keyframes twinkle{0%,100%{opacity:.5}50%{opacity:.25}}
+#app{position:relative;z-index:1}
+@media (prefers-reduced-motion:reduce){body::before,body::after{animation:none}}
 button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
-#app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-inline:16px;padding-block:10px;box-sizing:border-box}
+#app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding-inline:16px;padding-block:10px;box-sizing:border-box}
 #stage{position:relative;container-type:size;background:#a98bf0;border-radius:10px;overflow:hidden;
-  box-shadow:0 0 0 3px var(--plum),0 0 0 6px var(--grape);flex:none}
+  box-shadow:0 0 0 3px var(--plum),0 0 0 9px #ffc2ea,0 0 0 12px var(--plum),0 12px 0 12px #b0388f,0 12px 0 15px var(--plum),0 22px 30px 10px rgba(60,0,60,.35);flex:none}
 #game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
 
 /* ---------- HUD ---------- */
@@ -68,6 +79,49 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 
 /* ---------- Touch pads ---------- */
 .pad{--k:clamp(50px,14vw,70px);display:flex;justify-content:space-between;align-items:center;gap:16px;width:min(100%,760px);touch-action:none;flex:none}
+/* the controller: a glossy pink handheld shell the buttons sit in */
+#pad{position:relative;gap:clamp(8px,2vw,12px);padding:calc(var(--k)*.55) clamp(10px,3vw,16px) 22px;border-radius:38px 38px 56px 56px;
+  background:radial-gradient(120% 70% at 50% 0%,#ffd0ef 0%,#ff9fd8 30%,#f377c6 62%,#d958b0 100%);
+  box-shadow:0 0 0 3px var(--plum),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -10px 0 rgba(150,30,110,.35),0 10px 0 3px var(--plum),0 18px 26px 4px rgba(60,0,60,.35)}
+#pad::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.45) 47%,rgba(255,255,255,.7) 50%,rgba(255,255,255,.45) 53%,transparent 62%) no-repeat;background-size:50% 100%;
+  animation:padShine 5.5s ease-in-out infinite;mix-blend-mode:soft-light}
+@keyframes padShine{0%{background-position:-100% 0}45%,100%{background-position:250% 0}}
+#pad::after{content:"♥ HOOFBEAT";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-family:var(--f-pixel);font-size:8px;letter-spacing:.12em;color:#fff4fb;
+  text-shadow:1px 1px 0 #b0388f;opacity:.85;pointer-events:none;white-space:nowrap}
+#pad .grill{position:absolute;right:20px;top:12px;width:34px;height:14px;pointer-events:none;opacity:.55;
+  background:radial-gradient(circle,#b0388f 0 1.6px,transparent 2px) 0 0/7px 7px}
+#pad .led{position:absolute;left:22px;top:13px;width:9px;height:9px;border-radius:50%;background:#7fffb0;box-shadow:0 0 0 2px var(--plum),0 0 10px 3px rgba(127,255,176,.8);animation:led 2s ease-in-out infinite;pointer-events:none}
+@keyframes led{50%{opacity:.55}}
+/* sockets: each button sits in a little sunken well */
+#pad .lanes.one{position:relative;padding:8px;border-radius:30px;background:rgba(150,30,110,.28);box-shadow:inset 0 4px 8px rgba(80,0,60,.4),0 2px 0 rgba(255,255,255,.5)}
+#pad .mid1{display:flex;flex-direction:column;align-items:center;gap:14px;flex:none;padding:10px clamp(4px,1.2vw,8px);border-radius:999px;background:rgba(150,30,110,.22);box-shadow:inset 0 4px 8px rgba(80,0,60,.35),0 2px 0 rgba(255,255,255,.5)}
+/* STAR TURBO: a ring fills up gold; when it's full the star glows and wiggles */
+#pad .star1{position:relative;border:0;border-radius:50%;padding:0;width:min(calc(var(--k)*1.25),17vw);height:min(calc(var(--k)*1.25),17vw);overflow:visible;
+  background:conic-gradient(from -90deg,#ffd76a calc(var(--c,0)*360deg),rgba(58,35,80,.45) 0);
+  box-shadow:0 0 0 3px var(--plum),0 6px 0 3px var(--plum),0 9px 8px 3px rgba(60,0,60,.3);transition:transform .38s cubic-bezier(.25,1.9,.45,1)}
+#pad .star1 .sd{position:absolute;inset:12%;border-radius:50%;display:grid;place-items:center;align-content:center;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle at 50% 35%,#f6f0ff,#cfc2ec 60%,#a99bd0);box-shadow:inset 0 -6px 10px rgba(60,30,110,.35),inset 0 3px 3px rgba(255,255,255,.9),0 0 0 2px var(--plum)}
+#pad .star1 .sd::before{content:"";position:absolute;left:16%;right:16%;top:6%;height:36%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.1))}
+#pad .star1 svg{position:relative;width:52%;height:auto;filter:drop-shadow(0 2px 0 rgba(58,35,80,.35))}
+#pad .star1 svg path{fill:#d8cfee;stroke:var(--plum);stroke-width:2;stroke-linejoin:round}
+#pad .star1 .sl{position:relative;font-size:7px;margin-top:1px;color:var(--plum)}
+#pad .star1.ready{animation:starWiggle 1s ease-in-out infinite;box-shadow:0 0 0 3px var(--plum),0 6px 0 3px var(--plum),0 0 22px 8px rgba(255,215,106,.85)}
+#pad .star1.ready .sd{background:radial-gradient(circle at 50% 35%,#fffbe0,#ffe27a 50%,#f2b632 90%)}
+#pad .star1.ready svg path{fill:#fff4a8}
+#pad .star1.going .sd{background:radial-gradient(circle at 50% 35%,#ffffff,#ffe9a8 60%,#ffd76a)}
+#pad .star1.on{transform:translateY(5px) scale(1.06,.9);transition-duration:.06s}
+@keyframes starWiggle{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-8deg) scale(1.06)}75%{transform:rotate(8deg) scale(1.06)}}
+body.pad-over #pad{position:fixed;background:none;box-shadow:none;padding:0}
+body.pad-over #app,body.no-pad #app{gap:14px}
+body.pad-over #stage{box-shadow:0 0 0 3px var(--plum),0 0 0 7px #ffc2ea}
+body.pad-over #pad::before,body.pad-over #pad::after,body.pad-over #pad .led,body.pad-over #pad .grill{display:none}
+body.pad-over #pad .lanes.one,body.pad-over #pad .mid1{background:none;box-shadow:none}
+#pad .lane-up .dv2{display:none}
+#pad.swap .lane-up .dv2{display:block}
+#pad.swap .lane-dn small{display:none}
+#pad.swap .lane-up svg{transform:rotate(180deg)}
+#pad.swap .lane-dn svg{transform:none!important}
 .pad button{touch-action:none;border:3px solid var(--plum);font-family:var(--f-pixel);display:grid;place-items:center;align-content:center;gap:3px;
   box-shadow:0 5px 0 var(--plum);transition:transform .05s}
 .pad button small{font-size:7px;letter-spacing:.06em;opacity:.85}
@@ -82,7 +136,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .b-a{background:var(--pink);color:var(--plum)}
 .pl2{display:flex;align-items:center;gap:12px}
 .lanes{display:grid;gap:6px}
-.lanes.one{gap:12px;flex:0 1 240px;min-width:0}
+.lanes.one{gap:12px;flex:0 1 240px;min-width:0;display:grid}
 /* ---------- JELLY buttons: squishy, glossy, see-through candy like a 90s handheld ---------- */
 .lanes.one button,#pad .jump1,#pad .power1{transition:transform .38s cubic-bezier(.25,1.9,.45,1),box-shadow .2s}
 .lanes.one button.on,#pad .jump1.on,#pad .power1.on{transition-duration:.06s}
@@ -106,7 +160,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .lanes.one button small{position:relative;z-index:1;font-size:9px;pointer-events:none}
 #pad .act1{display:flex;align-items:center;gap:22px}
 /* big JUMP: gold bezel + pink jelly dome, with your horse peeking over the top */
-#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),44vw);height:min(calc(var(--k)*2.8),44vw);margin-top:calc(min(calc(var(--k)*2.8),44vw)*.3);border:0;padding:0;overflow:visible;background:none;box-shadow:none}
+#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),34vw);height:min(calc(var(--k)*2.8),34vw);margin-top:calc(min(calc(var(--k)*2.8),34vw)*.3);border:0;padding:0;overflow:visible;background:none;box-shadow:none}
 #pad .jump1.on{transform:none;box-shadow:none}
 #pad .jump1 .bezel{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 42%,#fffbe6 0 52%,#ffe48a 60%,#f2b632 70%,#d9961a 72%);
@@ -132,7 +186,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 @keyframes glitter{0%{background-position:12% 30%,70% 60%,40% 80%,0 0;opacity:1}50%{opacity:.55}100%{background-position:20% 18%,58% 72%,52% 68%,0 0;opacity:1}}
 #pad .jump1 .jl{position:relative;z-index:1;margin-top:14%;font-size:clamp(14px,3.4vw,20px);letter-spacing:.06em;color:#fff;
   text-shadow:2px 0 0 var(--plum),-2px 0 0 var(--plum),0 2px 0 var(--plum),0 -2px 0 var(--plum),2px 2px 0 var(--plum),-2px 2px 0 var(--plum),2px -2px 0 var(--plum),-2px -2px 0 var(--plum),0 3px 0 var(--plum)}
-#pad .power1{position:relative;overflow:hidden;border-radius:50%;width:calc(var(--k)*1.4);height:calc(var(--k)*1.4);font-size:11px;border:0;color:var(--plum);
+#pad .power1{position:relative;overflow:hidden;border-radius:50%;width:min(calc(var(--k)*1.1),15vw);height:min(calc(var(--k)*1.1),15vw);font-size:11px;border:0;color:var(--plum);
   background:radial-gradient(circle at 50% 74%,rgba(255,250,214,.9) 0 18%,transparent 52%),radial-gradient(circle at 50% 40%,#ffe58f,#ffc93a 55%,#e09a12 90%);
   box-shadow:0 0 0 3px var(--plum),0 7px 0 0 #b9780a,0 7px 0 3px var(--plum),0 11px 10px 2px rgba(10,0,25,.4),inset 0 -8px 14px rgba(150,80,0,.4),inset 0 3px 4px rgba(255,255,255,.9)}
 #pad .power1::before{content:"";position:absolute;left:16%;right:16%;top:6%;height:38%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.95),rgba(255,255,255,.1));pointer-events:none}
@@ -255,11 +309,13 @@ h2{font-family:var(--f-pixel);font-size:clamp(14px,3vw,22px);margin:0;color:var(
   </div>
 
   <div id="pad" class="pad">
+    <span class="led"></span><span class="grill"></span>
     <div class="lanes one">
-      <button data-p="0" data-act="up" class="lane-up" aria-label="Lane up"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg></button>
+      <button data-p="0" data-act="up" class="lane-up" aria-label="Lane up, or dive in mirror worlds"><small class="dv2">DIVE</small><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg></button>
       <button data-p="0" data-act="down" class="lane-dn" aria-label="Lane down, or dive while in the air"><svg viewBox="0 0 40 30" style="transform:rotate(180deg);filter:drop-shadow(0 -3px 0 rgba(58,35,80,.35))" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg><small>DIVE</small></button>
     </div>
-    <div class="act1"><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button><button data-p="0" data-act="jump" class="jump1" aria-label="Jump"><span class="bezel"></span><canvas id="jumpIcon" class="head" width="24" height="26"></canvas><span class="dome"><span class="jl">JUMP</span></span></button></div>
+    <div class="mid1"><button data-p="0" data-act="star" class="star1" id="starBtn" aria-label="Star turbo"><span class="sd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg><span class="sl">STAR</span></span></button><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button></div>
+    <div class="act1"><button data-p="0" data-act="jump" class="jump1" aria-label="Jump"><span class="bezel"></span><canvas id="jumpIcon" class="head" width="24" height="26"></canvas><span class="dome"><span class="jl">JUMP</span></span></button></div>
   </div>
   <div id="pad2" class="pad">
     <div class="pl2 p1">

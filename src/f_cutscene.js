@@ -8,7 +8,7 @@ function startCutscene(){
   mode='cutscene'; hud.hidden=true; hud2.hidden=true; particles.length=0; countEl.textContent='';
   SFX.fanfare(); setTimeout(()=>{ if(mode==='cutscene' && !muted) Music.start(1,'happy'); },900);
 }
-function cutsceneTap(){ if(mode==='cutscene' && cs.t>2.4){ Music.stop(); particles.length=0; showResults(); } }
+function cutsceneTap(){ if(mode==='cutscene' && cs.t>2.4){ Music.stop(); particles.length=0; startDance(); } }
 function updateCutscene(dt){
   cs.t+=dt; cheerT=Math.max(cheerT,.3);
   if(!cs.fived && cs.t>=cs.fiveAt){ cs.fived=true; SFX.highfive(); shake=2;

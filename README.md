@@ -33,7 +33,12 @@ Swipe the racer list to see everyone.
 - Big jumps and bullet time zoom the camera out and show your landing (white) and dive landing (pink)
 - Giant mountains with a slow valley road and a secret high cloud path between the summits
 - Chapters of three races plus a boss (Moon Queen, Dragon Pony), getting harder each chapter
-- Six worlds: Sunrise Meadow, Twilight Glen, Candy Cove, Crystal Peaks, Cloud Summit, Spooky Hollow
+- 19 worlds, each with its own rule: bouncy Mushroom Grove, sticky Candy Cove, swimming Splash Lagoon, floaty Starlight Space, hot Ember Volcano, slippery Frosty Peaks, slow Castle Court, Mirror Lake (up/down swapped), Rainbow Road (the world flips around), Backwards Bay (everything backwards), Silly Spider Woods (tickly spiders), Pumpkin Patch, Big Apple City, Neon Nights and the originals
+- STAR TURBO: the middle button fills from gems, dives, power-ups, combos and flips; when full, tap it to go golden, super fast and unstoppable
+- Double-tap jump in the air for a flippy flop (land it for speed and gems)
+- Power-ups start Fabulous Mode: rainbow glitter world and a K-pop music drop
+- After each boss: the high five, then a Friendship Dance rhythm game in the boss's courtyard that earns a Friendship Charm
+- Cloud-hopping sky routes above the low road; the camera pulls way back on mountain tops and big air
 - Turbo speedways, giant mountain ridges and a skeleton-horse Halloween level
 - Gems, bubble shields, gem magnets, super rainbows, cloud platforms and combos
 - Sticker book for manes, hats and trails; photo mode; ghost of your best run

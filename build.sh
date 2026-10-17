@@ -1,7 +1,7 @@
 #!/bin/sh
 # Rebuilds index.html from the source parts in src/ (joined in this order).
 cd "$(dirname "$0")"
-cat src/a_head.html src/b_core.js src/c_game.js src/d_render.js src/f_cutscene.js src/g_free.js src/h_powers.js src/e_ui.js | python3 -c '
+cat src/a_head.html src/b_core.js src/i_worlds.js src/c_game.js src/d_render.js src/f_cutscene.js src/j_dance.js src/g_free.js src/h_powers.js src/e_ui.js | python3 -c '
 import sys
 body=sys.stdin.read()
 i=body.index("</style>")+len("</style>")
