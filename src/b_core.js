@@ -40,7 +40,8 @@ const CONFIG = {
   // camera zoom: 1 = normal. Lower = further out. airMin is how far out the biggest jumps go
   // FABULOUS MODE (single player): grab a power-up and the world goes rainbow-glitter and the music drops into a K-pop banger
   fab: { time: 6.5, fade: 1.6 },
-  tallMax: 310,          // tallest game screen (in pixels at 320 wide) when there's room above the controls
+  tallMax: 310,
+  cloudPlatforms: false, // the jump-on clouds (sky routes) are switched off for now          // tallest game screen (in pixels at 320 wide) when there's room above the controls
   // STAR TURBO: fills up slowly; when full, tap STAR to blast off golden and unstoppable
   star: { time: 5.5, speed: 1.75, gem: .009, bigGem: .04, dive: .07, item: .12, combo: .035, flip: .09, smooth: .025 },
   flip: { window: .32, time: .55, boost: 45, gems: 3 },   // double-tap jump in the air for a flippy flop
@@ -415,6 +416,7 @@ function buildTrack(L){
   if(RULE==='space') pats.push('massif','peak','skyhop');
   pats.push('skyhop');   // cloud-hopping sky route everywhere
   if(d>.6) pats=pats.filter(p=>p!=='meadow');
+  if(!CONFIG.cloudPlatforms) pats=pats.filter(p=>p!=='cloud'&&p!=='skyhop');
   // giant mountains with secret cloud paths: from chapter 2 on mountain worlds, and later everywhere but Spooky Hollow
   if(style==='mountains' && d>=.12) pats.push('massif','massif');
   else if(d>=.35 && style!=='spooky') pats.push('massif');
@@ -516,6 +518,7 @@ function buildTrack(L){
     // split the secret path into separate clouds with gaps, drifting a little higher: hop across with good timing
     let cx=s0, ch=h+6, k=0; while(cx<e-40){ const cl=Math.min(e-cx,90+(k%2)*30); clouds.push({x:cx,len:cl,h:ch,secret:true,hop:true});
       gem(cx+cl/2,ap.lane,ch+9,true,k===2); gem(cx+cl/2+18,ap.lane,ch+9,true); cx+=cl+50; ch+=6+(k%3)*5; k++; } }
+  if(!CONFIG.cloudPlatforms){ clouds.length=0; for(const a of [gems,orbs]) for(let i=a.length-1;i>=0;i--) if(a[i].abs) a.splice(i,1); }
   if(RULE==='spiders'){ for(let sx=700;sx<FINISH_X-300;sx+=ri(200,340)) spiders.push({x:sx,lane:ri(0,2),ph:R()*6,hitT:0}); }
   for(const g of gems){ g.alt=(g.abs?0:heightAt(g.x))+g.off; g.taken=false; g.pull=null; }
   for(const o of orbs){ o.alt=(o.abs?0:heightAt(o.x))+o.off; o.taken=false; }

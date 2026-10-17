@@ -39,7 +39,7 @@ Swipe the racer list to see everyone.
 - Double-tap jump in the air for a flippy flop (land it for speed and gems)
 - Power-ups start Fabulous Mode: rainbow glitter world and a K-pop music drop
 - After each boss: the high five, then a Friendship Dance rhythm game in the boss's courtyard that earns a Friendship Charm
-- Cloud-hopping sky routes above the low road; the camera pulls way back on mountain tops and big air
+- Cloud-hopping sky routes above the low road (switched off for now: CONFIG.cloudPlatforms); the camera pulls way back on mountain tops and big air
 - Turbo speedways, giant mountain ridges and a skeleton-horse Halloween level
 - Gems, bubble shields, gem magnets, super rainbows, cloud platforms and combos
 - Sticker book for manes, hats and trails; photo mode; ghost of your best run

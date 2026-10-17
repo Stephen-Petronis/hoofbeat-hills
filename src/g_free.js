@@ -36,7 +36,7 @@ function appendFree(xEnd){
     else if(p==='peak'){ const h1=ri(60,90), h2=ri(110,170); const xs=profile(x,[[ri(180,230),h1],[ri(40,60),h1-ri(10,20)],[ri(150,200),h2],[ri(40,60),h2+4],[ri(170,230),ri(15,30)],[ri(70,90),0]]);
       for(let i=0;i<4;i++) gem(xs[2]+(xs[3]-xs[2])*i/3,ri(0,2),10); gem(xs[3]+40,1,46,false,true); x=xs[5]; }
     else if(p==='kick'){ const w=ri(85,105), h=ri(30,42), dr=ri(65,85); kick(x,w,h,dr);
-      if(R()<.5){ const cx0=x+w+ri(30,45), cl=ri(150,200), ch=Math.round(h+ri(18,26)); clouds.push({x:cx0,len:cl,h:ch}); for(let i=0;i<4;i++) gem(cx0+20+(cl-40)*i/3,ri(0,2),ch+9,true); }
+      if(CONFIG.cloudPlatforms && R()<.5){ const cx0=x+w+ri(30,45), cl=ri(150,200), ch=Math.round(h+ri(18,26)); clouds.push({x:cx0,len:cl,h:ch}); for(let i=0;i<4;i++) gem(cx0+20+(cl-40)*i/3,ri(0,2),ch+9,true); }
       else for(let i=0;i<5;i++) gem(x+w+20+i*24,1,30+18*Math.sin(Math.PI*i/4));
       x+=w+dr+60; }
     x+=ri(60,140);
