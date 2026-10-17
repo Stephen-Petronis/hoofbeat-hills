@@ -13,17 +13,25 @@ The horse always runs on its own. You only steer and jump.
 | Jump (hold to glide or hover) | Space | JUMP |
 | Change lane | ↑ ↓ | ▲ ▼ |
 | Dive (in the air) | ↓ | ▼ |
+| Power (boss horses) | X | FIRE / MOON |
 | Pause | P | II |
 
 ## Racers
 
-- **Unicorn**: fastest on the ground, double jump.
+Swipe the racer list to see everyone.
+
+- **Unicorn**: fastest on flat ground, double jump.
 - **Pegasus**: hold jump to glide; strong on uphills, and auto-hops obstacles during speed bursts.
-- **Skeleton Horse (secret)**: beat the Level 8 boss to unlock. Every level turns to Halloween, ghost hover, fire trail.
+- **Moon Queen** (beat her at level 4): POWER button, Moon Phase. Turns ghostly and runs straight through hills.
+- **Dragon Pony** (beat her at level 8): POWER button, Fire Turbo. Blasts forward and smashes through obstacles.
+- **Mountain King** (beat him at level 12): press jump on an uphill to charge up it.
+- **Skeleton Horse** (secret, beat the level 8 boss): every level turns to Halloween, ghost hover, fire trail.
 
 ## Features
 
 - Uphill slows you, downhill builds turbo speed; dive onto downslopes for a boost
+- Big jumps and bullet time zoom the camera out and show your landing (white) and dive landing (pink)
+- Giant mountains with a slow valley road and a secret high cloud path between the summits
 - Chapters of three races plus a boss (Moon Queen, Dragon Pony), getting harder each chapter
 - Six worlds: Sunrise Meadow, Twilight Glen, Candy Cove, Crystal Peaks, Cloud Summit, Spooky Hollow
 - Turbo speedways, giant mountain ridges and a skeleton-horse Halloween level

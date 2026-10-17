@@ -125,7 +125,8 @@ function renderView(focus,cam,y0){
   for(const it of list){
     if(it.fence){ const x=it.fence.x, sx=Math.round(x-cx); ctx.drawImage(TH.spooky?hurdleSpooky:hurdleSpr,sx-6,laneY(it.l)-Math.round(heightAt(x))-14); }
     else if(it.br){ const b=it.br; for(let x=b.x;x<=b.x+b.len-6;x+=7){ const sx=Math.round(x-cx); if(sx<-16||sx>W+2) continue; const j=hash(x+it.l)%3; ctx.drawImage(TH.spooky?brambleSpooky:brambleSpr,sx-3,laneY(it.l)-Math.round(heightAt(x+4))-10+(j===0?1:0)); } }
-    else if(it.cl){ const c=it.cl; for(let x=c.x-4;x<=c.x+c.len-16;x+=14){ const sx=Math.round(x-cx); if(sx<-26||sx>W+2) continue; ctx.drawImage(cloudPlat,sx,laneY(it.l)-c.h-3+(hash(x+it.l)%2)); } }
+    else if(it.cl){ const c=it.cl; for(let x=c.x-4;x<=c.x+c.len-16;x+=14){ const sx=Math.round(x-cx); if(sx<-26||sx>W+2) continue; ctx.drawImage(cloudPlat,sx,laneY(it.l)-c.h-3+(hash(x+it.l)%2)); }
+      if(c.secret && it.l===1) for(let k=0;k<5;k++){ const px=Math.round(c.x+((k*53+t*40)%Math.max(40,c.len))-cx), py=laneY(0)-c.h-8-((k*7)%10); if(((t*6+k)|0)%3) continue; ctx.fillStyle='#fff4a8'; ctx.fillRect(px-1,py,3,1); ctx.fillRect(px,py-1,1,3); } }
     else if(it.gem){ const g=it.gem, bob=Math.round(Math.sin(t*4+g.x*.1)*1.2), sx=Math.round(g.x-cx);
       const y=Math.round(laneY(g.ly)-g.alt)+bob; if(g.big) ctx.drawImage(bigGemSpr,sx-6,y-6); else ctx.drawImage(gemSpr[g.c],sx-4,y-5);
       if(((t*3+g.x*.05)|0)%5===0){ ctx.fillStyle='#ffffff'; ctx.fillRect(sx+2,y-5,1,1); } }
@@ -138,6 +139,7 @@ function renderView(focus,cam,y0){
     else drawRacer(it.r,cx);
   }
   for(const p of particles) drawParticle(p,cx);
+  if(!twoP && !demo && focus.isPlayer && focus.state==='air' && focus.alt-heightAt(focus.x)>26) drawTrajectory(focus,cx);
   // combo counter over the pony
   for(const r of players) if(r.combo>=2 && r.state==='air'){ pixelText('×'+r.combo, Math.round(r.x-cx), Math.round(ry(r))-36); }
   renderForeground(cam.x);
@@ -161,9 +163,10 @@ function drawRacer(r,cx){
   else if(r.state==='air'){ spr = (S.airDown && (r.gliding ? (t*7|0)%2 : r.vz<0)) ? S.airDown : S.air; a=r.angle; }
   else { spr=S.run[(r.stride|0)%4]; a=r.angle; }
   a=Math.round(a/(Math.PI/12))*(Math.PI/12);
+  if(r.turboT>0 && ((t*14)|0)%2){ ctx.fillStyle='rgba(255,110,40,.4)'; ctx.fillRect(sx-15,Math.round(feet)-28,30,28); }
   if(r.superT>0 && ((t*12)|0)%2){ ctx.fillStyle='rgba(255,215,106,.35)'; ctx.fillRect(sx-15,Math.round(feet)-28,30,28); }
-  if(r.hovering){ ctx.globalAlpha=.55+.15*Math.sin(t*10); drawPonyAt(S,spr,sx,feet,a,r.hat); ctx.globalAlpha=1;
-    ctx.fillStyle='#9affb0'; for(let k=0;k<6;k++){ const an=t*4+k*1.05; ctx.fillRect(Math.round(sx+Math.cos(an)*14),Math.round(feet-14+Math.sin(an)*9),1,1); } }
+  if(r.hovering||r.phaseT>0){ ctx.globalAlpha=.55+.15*Math.sin(t*10); drawPonyAt(S,spr,sx,feet,a,r.hat); ctx.globalAlpha=1;
+    ctx.fillStyle=r.phaseT>0?'#cfe0ff':'#9affb0'; for(let k=0;k<6;k++){ const an=t*4+k*1.05; ctx.fillRect(Math.round(sx+Math.cos(an)*14),Math.round(feet-14+Math.sin(an)*9),1,1); } }
   else drawPonyAt(S,spr,sx,feet,a,r.hat);
   if(r.shield){ const cy=Math.round(feet)-13, R=15; ctx.fillStyle='#bfe0ff';
     for(let k=0;k<40;k++){ const an=k/40*Math.PI*2; if((k+(t*10|0))%5===0) continue; ctx.fillRect(Math.round(sx+Math.cos(an)*R),Math.round(cy+Math.sin(an)*R*.85),1,1); }
@@ -175,9 +178,9 @@ function render(){
   if(mode==='photo'){ renderPhoto(); return; }
   if(mode==='cutscene'){ renderCutscene(); return; }
   if(twoP && !demo){ renderView(players[0],cams[0],0); renderView(players[1],cams[1],H); }
-  else if(freeMode && !demo && fr.zoom<.995){
+  else if(!demo && viewZoom<.995){
     // zoomed out: draw the world into a bigger view, then shrink it onto the screen
-    const z=fr.zoom, w=Math.ceil(320/z), h=Math.ceil(180/z);
+    const z=viewZoom, w=Math.ceil(320/z), h=Math.ceil(180/z);
     if(zoomCv.width!==w||zoomCv.height!==h){ zoomCv.width=w; zoomCv.height=h; }
     const zc=zoomCv.getContext('2d'); zc.imageSmoothingEnabled=false;
     const main=ctx; ctx=zc; W=w; H=h;
@@ -211,4 +214,17 @@ function renderPhoto(){
   if(photo.sparkles){ if(Math.random()<.6) particles.push({x:Math.random()*W,y:-4,vx:(Math.random()-.5)*10,vy:15+Math.random()*25,life:6,c:RAINBOW[(Math.random()*5)|0],shape:'star',g:0});
     for(const p of particles) drawParticle(p,0); }
   pixelText(ponyName(photo.kind),160,22,'#fff6fb');
+}
+
+// dotted guide while flying: white = where you'll land, pink = where you'd land if you dive right now
+function drawTrajectory(r,cx){
+  const P=r.P, base=laneY(r.laneY), dt=.035;
+  const sim=(dive,col)=>{ let x=r.x, a=r.alt, vx=r.vx, vz=dive?Math.min(r.vz,0):r.vz;
+    for(let i=0;i<90;i++){
+      if(dive){ vz=Math.min(vz-1600*dt,-CONFIG.dive.speed*.6); if(vz<-CONFIG.dive.speed) vz=-CONFIG.dive.speed; } else vz-=P.gravity*dt;
+      x+=vx*dt; a+=vz*dt; const g=heightAt(x);
+      if(a<=g){ const sx=Math.round(x-cx), sy=Math.round(base-g); ctx.fillStyle=col; ctx.fillRect(sx-2,sy-2,1,1); ctx.fillRect(sx+2,sy-2,1,1); ctx.fillRect(sx-1,sy-1,3,1); ctx.fillRect(sx,sy-1,1,1); ctx.fillRect(sx-2,sy,1,1); ctx.fillRect(sx+2,sy,1,1); return; }
+      if(i%2===0 && i>1){ ctx.fillStyle=col; ctx.fillRect(Math.round(x-cx),Math.round(base-a),2,2); }
+    } };
+  ctx.globalAlpha=.9; sim(false,'#ffffff'); if(!r.dive) sim(true,'#ff6fae'); ctx.globalAlpha=1;
 }

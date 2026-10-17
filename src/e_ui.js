@@ -2,7 +2,7 @@
 /* ---------------- HUD & UI ---------------- */
 const $=id=>document.getElementById(id);
 const hud=$('hud'), hud2=$('hud2'), countEl=$('count'), toastEl=$('toast'), timeEl=$('time'), heatEl=$('heat'), heatBar=$('heatBar'), placeEl=$('place'), prog=$('prog'), pwrEl=$('pwr'), gems1=$('gems1');
-const DOT_COL={skeleton:'#ece6d6',skelly:'#ff8a2a',unicorn:'#ff6fae',pegasus:'#7fe3bd',seapony:'#8fe8f0',clover:'#ffb48a',plum:'#a98ae6',queen:'#5a62d6',dragon:'#5fcf8f'};
+const DOT_COL={king:'#c4c8e6',skeleton:'#ece6d6',skelly:'#ff8a2a',unicorn:'#ff6fae',pegasus:'#7fe3bd',seapony:'#8fe8f0',clover:'#ffb48a',plum:'#a98ae6',queen:'#5a62d6',dragon:'#5fcf8f'};
 let dots=[];
 function buildProgressDots(){
   prog.querySelectorAll('.dot').forEach(d=>d.remove());
@@ -23,7 +23,9 @@ function updateHud(dt){
   const p=players[0];
   timeEl.textContent=freeMode?freeDistance()+'m':fmt(p.finishT ?? raceT);
   let fill;
-  if(p.P.hoverTime) fill=p.hover/p.P.hoverTime;
+  if(p.P.power){ const cd=p.P.power==='fire'?CONFIG.powers.fireCooldown:CONFIG.powers.phaseCooldown; fill=p.turboT>0||p.phaseT>0?1:1-Math.max(0,p.powerCD)/cd; $('powerBtn').classList.toggle('cool',p.powerCD>0); }
+  else if(p.P.charge) fill=p.chargeT>0?1:p.state==='air'?0:1;
+  else if(p.P.hoverTime) fill=p.hover/p.P.hoverTime;
   else if(p.P.glideTime) fill=p.glide/p.P.glideTime;
   else if(p.P.airJumps) fill=p.state!=='air'?1:(p.jumpsLeft>0||(!p.jumped&&p.airT<CONFIG.coyoteTime))?.5:0;
   else fill=p.state!=='air'?1:0;
@@ -47,12 +49,15 @@ const wallet=()=>document.querySelectorAll('[data-wallet]').forEach(e=>e.textCon
 const RACERS=[
   {kind:'unicorn', desc:'Fastest on the ground. Tap jump again in the air for a double jump.', speed:4, jump:3},
   {kind:'pegasus', desc:'Hold jump to glide. Her wings carry her up hills, and in a speed burst she hops obstacles by herself.', speed:3, jump:4},
+  {kind:'queen', desc:'POWER: Moon Phase. Turn ghostly and run straight through hills.', speed:4, jump:3, locked:()=>!save.unlocked.queen, lockName:'MOON QUEEN', lockText:'Beat the Moon Queen in her boss race (level 4) to race as her.'},
+  {kind:'dragon', desc:'POWER: Fire Turbo. Blast forward super fast and smash right through obstacles.', speed:4, jump:3, locked:()=>!save.unlocked.dragon, lockName:'DRAGON PONY', lockText:'Beat Dragon Pony in her boss race (level 8) to race as her.'},
+  {kind:'king', desc:'Press jump on an uphill to CHARGE up it at top speed. Born for big mountains.', speed:3, jump:3, locked:()=>!save.unlocked.king, lockName:'MOUNTAIN KING', lockText:'Beat the Mountain King in his boss race (level 12) to race as him.'},
   {kind:'skelly', desc:'Every level turns to Halloween! Hold jump in the air to ghost-hover, press \u25bc to drop. Skeleton horses are his friends.', speed:4, jump:3, locked:()=>!save.seapony, lockText:'Someone mysterious is waiting behind the Level 8 boss.'},
 ];
 const pips=n=>'<b>'+[0,1,2,3].map(i=>'<i'+(i<n?' class="f"':'')+'></i>').join('')+'</b>';
 function buildCards(){
   $('cards').innerHTML=RACERS.map(R=>{
-    if(R.locked&&R.locked()) return `<div class="card locked"><canvas class="pv" data-k="mystery" width="40" height="38"></canvas><h3>???</h3><p>${R.lockText}</p><div class="pips"><span>SPEED</span>${pips(0)}<span>JUMP</span>${pips(0)}</div><span class="best">LOCKED</span></div>`;
+    if(R.locked&&R.locked()) return `<div class="card locked"><canvas class="pv" data-k="${R.lockName?'sil-'+R.kind:'mystery'}" width="40" height="38"></canvas><h3>${R.lockName||'???'}</h3><p>${R.lockText}</p><div class="pips"><span>SPEED</span>${pips(0)}<span>JUMP</span>${pips(0)}</div><span class="best">LOCKED</span></div>`;
     return `<div class="card" data-pony="${R.kind}"><canvas class="pv" data-k="${R.kind}" width="40" height="38"></canvas>
       <input class="pname" data-pony="${R.kind}" maxlength="10" aria-label="${CONFIG.ponies[R.kind].name} name" placeholder="${CONFIG.defaultNames[R.kind]}" value="${(save.names[R.kind]||CONFIG.defaultNames[R.kind]).replace(/"/g,'')}" title="Tap to rename">
       <h3>${CONFIG.ponies[R.kind].name.toUpperCase()}</h3><p>${R.desc}</p>
@@ -89,6 +94,8 @@ function setMode(m){ twoP=m===2; freeMode=m==='free'; pickStage=0;
 $('m1').addEventListener('click',()=>setMode(1));
 $('m2').addEventListener('click',()=>setMode(2));
 $('m3').addEventListener('click',()=>setMode('free'));
+$('cPrev').addEventListener('click',()=>$('cards').scrollBy({left:-230,behavior:'smooth'}));
+$('cNext').addEventListener('click',()=>$('cards').scrollBy({left:230,behavior:'smooth'}));
 
 function updateLevelUI(){ $('lvName').textContent='LEVEL '+level+' · '+levelName(level).toUpperCase()+({speedway:' · TURBO',mountains:' · MOUNTAINS',spooky:' · SPOOKY'}[levelStyle(level)]||'')+(isBoss(level)?' · BOSS':''); $('lvPrev').disabled=level<=1; $('lvNext').disabled=level>=save.maxLevel; }
 function changeLevel(dl){ const n=clamp(level+dl,1,save.maxLevel); if(n===level) return; level=n; setupRace(true); refreshBest(); }
@@ -100,8 +107,9 @@ function startRace(){
   audio();
   setupRace(false);
   show(null); hud.hidden=twoP; hud2.hidden=!twoP; document.querySelector('.hud-c').hidden=freeMode; placeEl.hidden=freeMode; $('quitBtn').textContent=freeMode?'END RUN':'QUIT RACE';
-  if(!twoP) $('meterLabel').textContent=CONFIG.ponies[chosen].hoverTime?'GHOST':CONFIG.ponies[chosen].glideTime?'WINGS':CONFIG.ponies[chosen].airJumps?'JUMPS':'JUMP';
-  mode='countdown'; countdown=3; lastCount=0; for(const I of INP){ for(const k in NO_INPUT) I[k]=false; I.tap=false; I.lanes.length=0; }
+  if(!twoP) $('meterLabel').textContent=CONFIG.ponies[chosen].power==='fire'?'FIRE':CONFIG.ponies[chosen].power==='moon'?'MOON':CONFIG.ponies[chosen].charge?'CHARGE':CONFIG.ponies[chosen].hoverTime?'GHOST':CONFIG.ponies[chosen].glideTime?'WINGS':CONFIG.ponies[chosen].airJumps?'JUMPS':'JUMP';
+  mode='countdown'; countdown=3; lastCount=0; for(const I of INP){ for(const k in NO_INPUT) I[k]=false; I.tap=false; I.ptap=false; I.lanes.length=0; }
+  { const pw=CONFIG.ponies[chosen].power; $('powerBtn').hidden=twoP||!pw; $('powerBtn').textContent=pw==='fire'?'FIRE':pw==='moon'?'MOON':'POWER'; layout(); }
   $('lvl').textContent=freeMode?'FREE RUN':'LV '+level;
   const boss=!twoP && !freeMode && isBoss(level);
   if(freeMode){ toast('FREE RUN! GRAB THE GLOWING ORBS',true); return; }
@@ -129,6 +137,7 @@ function showResults(){
     const cleared = boss ? place===0 : place<=1;
     let bonus=0;
     if(cleared){ save.maxLevel=Math.max(save.maxLevel,level+1); if(boss){ bonus=CONFIG.bossBonus; p.gems+=bonus; } }
+    if(boss && cleared){ const bk=bossKind(level); if(!save.unlocked[bk]){ save.unlocked[bk]=true; flash=CONFIG.ponies[bk].name.toUpperCase()+' IS NOW PLAYABLE!'; } }
     if(boss && cleared && level>=CONFIG.unlockSeaPonyAt && !save.seapony){ save.seapony=true; if(!save.owned.trail.includes('fire')) save.owned.trail.push('fire'); flash='A NEW RACER JOINED: THE SKELETON HORSE!'; SFX.fanfare(); }
     nextOnAgain=cleared;
     $('rPlace').textContent = boss ? (cleared?'BOSS DEFEATED!':CONFIG.bosses[bossKind(level)].name.toUpperCase()+' WINS') : ord(place)+' PLACE';
@@ -225,7 +234,7 @@ function press(p,act,on){
   if(mode==='cutscene'){ if(on) cutsceneTap(); return; }
   const I=INP[p];
   if(act==='up'||act==='down'){ if(on) I.lanes.push(act==='up'?-1:1); return; }
-  I[act]=on; if(on){ audio(); if(act==='jump') I.tap=true; }
+  I[act]=on; if(on){ audio(); if(act==='jump') I.tap=true; if(act==='power') I.ptap=true; }
 }
 document.querySelectorAll('.pad [data-act]').forEach(b=>{
   const act=b.dataset.act, p=+b.dataset.p, ids=new Set();
@@ -234,13 +243,13 @@ document.querySelectorAll('.pad [data-act]').forEach(b=>{
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,up));
   b.addEventListener('contextmenu',e=>e.preventDefault());
 });
-const KEY1={ArrowLeft:'slow',KeyA:'slow',ArrowRight:'push',KeyD:'push',ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',KeyZ:'gallop',KeyJ:'gallop',Space:'jump',KeyX:'jump',KeyK:'jump'};
+const KEY1={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',Space:'jump',KeyK:'jump',KeyX:'power',ShiftLeft:'power',ShiftRight:'power',KeyL:'power'};
 const KEY2={KeyW:[0,'up'],KeyS:[0,'down'],KeyD:[0,'jump'],KeyF:[0,'jump'],Space:[0,'jump'],ArrowUp:[1,'up'],ArrowDown:[1,'down'],ArrowRight:[1,'jump'],KeyL:[1,'jump'],Enter:[1,'jump']};
 const keyAct=code=>{ if(twoP){ const m=KEY2[code]; return m?m:null; } const a=KEY1[code]; return a?[0,a]:null; };
 function updateKeys(){
   $('keys').innerHTML = twoP
     ? 'P1: <kbd>W</kbd><kbd>S</kbd> lanes (S in air = dive) · <kbd>D</kbd> jump &nbsp;&nbsp; P2: <kbd>↑</kbd><kbd>↓</kbd> lanes · <kbd>→</kbd> jump &nbsp;&nbsp; <kbd>P</kbd> pause'
-    : '<kbd>Space</kbd> jump (hold to glide or hover) · <kbd>↑</kbd><kbd>↓</kbd> change lane · <kbd>↓</kbd> in the air: dive · <kbd>P</kbd> pause';
+    : '<kbd>Space</kbd> jump (hold to glide or hover) · <kbd>↑</kbd><kbd>↓</kbd> change lane · <kbd>↓</kbd> in the air: dive · <kbd>X</kbd> power · <kbd>P</kbd> pause';
   layout();
 }
 addEventListener('keydown',e=>{
@@ -280,6 +289,7 @@ function drawPreviews(){
   const f=(t*9|0)%4;
   for(const [k,x] of previews){ if(x.canvas.offsetParent===null) continue; x.clearRect(0,0,40,38);
     if(k==='mystery'){ x.drawImage(ponySet('mystery').run[0],2,5); continue; }
+    if(k.startsWith('sil-')){ x.drawImage(ponySet(k.slice(4)).run[0],2,5); x.globalCompositeOperation='source-atop'; x.fillStyle='#4a3466'; x.fillRect(0,0,40,38); x.globalCompositeOperation='source-over'; continue; }
     const eq=equipOf(k); x.drawImage(ponySet(k,eq.mane).run[f],2,5);
     if(eq.hat!=='none'&&HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,2+h.dx-1,5+h.dy-1); } }
   if(mode==='shop'){ const eq=equipOf(shopPony), S=TRAILS[eq.trail].s; shopX.clearRect(0,0,64,40);

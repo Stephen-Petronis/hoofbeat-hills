@@ -4,18 +4,19 @@ function makeRacer(kind,P,lane,o={}){
   return Object.assign({kind,P,lane,laneY:lane,prefLane:lane,x:START_X,prevX:START_X,alt:0,vz:0,vx:0,angle:0,state:'ground',stride:0,
     tumble:0,spin:0,safe:0,respawnX:0,jumpBuf:0,jumped:false,jumpsLeft:0,glide:P.glideTime||0,gliding:false,hover:P.hoverTime||0,hovering:false,airT:0,mult:1,finishT:null,dustT:0,laneT:0,
     trail:[],trailT:0,rainbow:0,shield:false,magnetT:0,superT:0,combo:0,bestCombo:0,cloud:null,slowmoUsed:false,gemN:0,gemT:0,gems:0,
-    isPlayer:false,ai:false,idx:0,name:'',spr:ponySet(kind),hat:null,trailStyle:'rainbow',skeleton:false,turboOn:false,wanderT:2},o);
+    isPlayer:false,ai:false,idx:0,name:'',spr:ponySet(kind),hat:null,trailStyle:'rainbow',skeleton:false,turboOn:false,wanderT:2,powerCD:0,turboT:0,phaseT:0,phaseAlt:0,phaseTotal:0,chargeT:0},o);
 }
 let mode='title', twoP=false, demo=true;
 let players=[], racers=[], ghost=null, rec=[], recT=0;
 const cams=[{x:0,y:0},{x:0,y:0}];
 let raceT=0, countdown=0, finishTimer=0, firstFinish=null, t=0, lastCount=0;
 let shake=0, slowT=0, cheerT=0, gaspT=0;
+let viewZoom=1;   // camera pulls back for big jumps, bullet time and a big free-run herd
 let level = Math.max(1, save.maxLevel|0);
 let chosen='unicorn', chosen2='pegasus', pickStage=0;
 const particles=[];
 const NO_INPUT={gallop:false,jump:false,slow:false,push:false};
-const mkInput=()=>({gallop:false,jump:false,slow:false,push:false,tap:false,lanes:[]});
+const mkInput=()=>({gallop:false,jump:false,slow:false,push:false,power:false,tap:false,ptap:false,lanes:[]});
 const INP=[mkInput(),mkInput()];
 
 function setupRace(isDemo){
@@ -38,7 +39,7 @@ function setupRace(isDemo){
   if(free){ /* free run: no rivals, friendly horses come and go */ }
   else if(!two){
     if(!isDemo && isBoss(level)){ const bk=bossKind(level), B=CONFIG.bosses[bk];
-      racers.push(makeRacer(bk,{top:B.top*sp,accel:130*sp,gravity:560,jump:250,jump2:0,airJumps:0,glideTime:0,glideFall:0},0,
+      racers.push(makeRacer(bk,{top:B.top*sp,accel:130*sp,gravity:560,jump:250,jump2:0,airJumps:0,glideTime:0,glideFall:0,uphillMin:B.uphillMin},0,
         {ai:true,boss:true,name:B.name,spr:ponySet(bk),hat:bk==='queen'?'crown':null,trailStyle:B.trail,rainbow:999}));
       if(spooky){ racers.push(skel(0,2,140)); racers.push(skel(1,1,280)); } }
     else if(spooky){ racers.push(skel(0,0,0)); racers.push(skel(1,2,0)); if(levelDifficulty(level)>.45) racers.push(skel(2,1,200)); }
@@ -61,6 +62,8 @@ const ry = r => laneY(r.laneY)-r.alt;
 function emit(type,r,arg){
   const x=r.x, y=ry(r)-10;
   if(type==='rattle'){ burst(x,y,['#ece6d6','#bdb4a0','#7fffb0'],10,60,r.vx*.4); if(!demo) SFX.rattle(); return; }
+  if(type==='fire') burst(x,y,['#ff4f1a','#ffa53a','#ffe066'],20,100,r.vx*.5);
+  if(type==='moon') burst(x,y,['#cfe0ff','#ffffff','#fff4a8'],20,80,r.vx*.4);
   if(type==='winghop') burst(x,y,['#ffffff','#e6dcff','#c9b3ff'],12,60,r.vx*.4);
   if(type==='slam'||type==='thud') burst(x,y+10,type==='slam'?RAINBOW:['#fff6fb','#d9f7e9'],type==='slam'?16:8,80,r.vx*.5);
   if(type==='smooth') burst(x,y+8,['#ffffff','#ffd76a'],6,40,r.vx*.3);
@@ -79,6 +82,9 @@ function emit(type,r,arg){
   switch(type){
     case 'jump': SFX.jump(); break;
     case 'winghop': SFX.flap(); toast(who+'WING HOP!'); break;
+    case 'fire': SFX.fire(); toast(who+'FIRE TURBO!'); shake=Math.max(shake,2); break;
+    case 'moon': SFX.moon(); toast(who+'MOON PHASE!'); break;
+    case 'charge': SFX.charge(); toast(who+'CHARGE!'); break;
     case 'slam': SFX.slam(); toast(who+'DIVE BOOST!'); shake=Math.max(shake,2); break;
     case 'thud': SFX.land(); break;
     case 'smooth': SFX.smooth(); if(r.airT>.7) toast(who+'SWEET LANDING!'); break;
@@ -99,7 +105,7 @@ function emit(type,r,arg){
 
 function crash(r,respawnX){
   if(r.ai || r.safe>0 || r.state==='tumble') return;
-  if(r.superT>0){ emit('smash',r); return; }
+  if(r.superT>0||r.turboT>0){ emit('smash',r); return; }
   if(r.shield){ r.shield=false; r.safe=CONFIG.safeTime; emit('pop',r); return; }
   r.combo=0;
   if(save.noLose && r.isPlayer){ r.state='air'; r.cloud=null; r.vz=CONFIG.shroomBounce; r.airT=0; r.jumped=true; r.jumpsLeft=r.P.airJumps||0; r.safe=.9; emit('giggle',r); return; }
@@ -119,7 +125,7 @@ function land(r,g){
   emit(hard?'hardland':'land',r);
 }
 function goAir(r,nx,alt,vz,jumped){
-  r.state='air'; r.cloud=null; r.dive=false; r.x=nx; r.alt=alt; r.vz=vz; r.airT=0; r.jumped=jumped; r.jumpsLeft=r.P.airJumps||0;
+  r.chargeT=0; r.state='air'; r.cloud=null; r.dive=false; r.x=nx; r.alt=alt; r.vz=vz; r.airT=0; r.jumped=jumped; r.jumpsLeft=r.P.airJumps||0;
 }
 
 function stepRacer(r,inp,dt,live){
@@ -130,6 +136,10 @@ function stepRacer(r,inp,dt,live){
   if(r.jumpBuf>0) r.jumpBuf-=dt;
   if(r.magnetT>0) r.magnetT-=dt;
   if(r.superT>0){ r.superT-=dt; r.rainbow=Math.max(r.rainbow,.25); }
+  if(r.powerCD>0) r.powerCD-=dt;
+  if(r.turboT>0){ r.turboT-=dt; r.rainbow=Math.max(r.rainbow,.25);
+    if(Math.random()<.8) particles.push({x:r.x-14+Math.random()*6,y:ry(r)-8-Math.random()*14,vx:-60-Math.random()*40,vy:-10-Math.random()*20,life:.4,c:['#ff4f1a','#ffa53a','#ffe066'][(Math.random()*3)|0],sz:2,g:-20}); }
+  if(r.phaseT>0){ stepPhase(r,dt); return; }
 
   if(r.state==='tumble'){
     r.tumble-=dt; r.spin+=dt*13;
@@ -146,13 +156,18 @@ function stepRacer(r,inp,dt,live){
     const c=r.cloud, swim=!!P.swim;
     const inGoo=!c && gooAt(r.x,r.lane);
     let maxV=0;
-    if(live && inp.gallop) maxV=P.top*r.mult*(r.superT>0?CONFIG.items.superSpeed:1)*(inGoo&&swim?1.08:1);
-    if(inGoo && !swim && r.superT<=0) maxV=Math.min(maxV,CONFIG.gooSpeed);
+    if(live && inp.gallop) maxV=P.top*r.mult*(r.superT>0?CONFIG.items.superSpeed:1)*(r.turboT>0?CONFIG.powers.fireSpeed:1)*(inGoo&&swim?1.08:1);
+    if(inGoo && !swim && r.superT<=0 && r.turboT<=0) maxV=Math.min(maxV,CONFIG.gooSpeed);
     const s=c?0:slopeAt(r.x);
     // uphill: slow toward a hiking crawl; downhill: push past top speed (momentum carries over the next crest)
+    // Mountain King: press jump on an uphill to charge up it; keep holding to keep charging
+    if(P.charge && live && !c && r.jumpBuf>0 && s>0.1){ r.jumpBuf=0; if(r.chargeT<=0) emit('charge',r); r.chargeT=CONFIG.powers.chargeTime; }
+    if(r.chargeT>0){ r.chargeT-=dt; if(s>0.06 && inp.jump) r.chargeT=Math.max(r.chargeT,.15); r.rainbow=Math.max(r.rainbow,.2);
+      if(Math.random()<.5) particles.push({x:r.x-8,y:ry(r)-1,vx:-40-Math.random()*40,vy:-20-Math.random()*20,life:.35,c:'#c8b8a0',sz:2}); }
     let target=maxV;
-    if(s>0.02) target=maxV*clamp(1-s*(P.uphillDrag??CONFIG.uphillDrag), P.uphillMin??CONFIG.uphillMin, 1);
-    if(r.vx<target) r.vx=Math.min(target, r.vx+P.accel*(r.superT>0?1.6:1)*dt);
+    if(r.chargeT>0) target=Math.max(maxV,P.top*CONFIG.powers.chargeSpeed);
+    else if(s>0.02 && r.turboT<=0) target=maxV*clamp(1-s*(P.uphillDrag??CONFIG.uphillDrag), P.uphillMin??CONFIG.uphillMin, 1);
+    if(r.vx<target) r.vx=Math.min(target, r.vx+P.accel*(r.chargeT>0?4:r.superT>0||r.turboT>0?1.8:1)*dt);
     else { const drag = inGoo&&!swim ? 420 : s>0.02 ? Math.max(80,CONFIG.uphillBrake*s*(P.uphillDrag?P.uphillDrag/CONFIG.uphillDrag:1)) : maxV>0 ? CONFIG.coastDrag : 110; r.vx=Math.max(target, r.vx-drag*dt); }
     if(s<-0.02) r.vx += -s*CONFIG.downhillPush*dt;
     r.vx=Math.min(r.vx, P.top*CONFIG.speedCap*(r.superT>0?1.15:1));
@@ -304,7 +319,7 @@ function update(dt){
   const live = demo || mode==='race' || mode==='finish';
   if(!demo && mode==='race'){
     raceT+=dt;
-    for(const p of players){ const I=INP[p.idx]; while(I.lanes.length){ const v=I.lanes.shift(); if(v>0 && p.state==='air' && !p.dive){ p.dive=true; p.gliding=false; if(p.vz>0) p.vz=0; SFX.dive(); } else if(!(v>0 && p.state==='air')) p.lane=clamp(p.lane+v,0,2); } if(I.tap){ p.jumpBuf=CONFIG.jumpBuffer; I.tap=false; } }
+    for(const p of players){ const I=INP[p.idx]; while(I.lanes.length){ const v=I.lanes.shift(); if(v>0 && p.state==='air' && !p.dive){ p.dive=true; p.gliding=false; if(p.vz>0) p.vz=0; SFX.dive(); } else if(!(v>0 && p.state==='air')) p.lane=clamp(p.lane+v,0,2); } if(I.tap){ p.jumpBuf=CONFIG.jumpBuffer; I.tap=false; } if(I.ptap){ usePower(p); I.ptap=false; } }
   } else for(const I of INP){ I.lanes.length=0; I.tap=false; }
   const [lo,hi]=CONFIG.rubberBand, lead=Math.max(...players.map(p=>p.x));
   for(const r of racers){
@@ -343,10 +358,18 @@ function update(dt){
         particles.push({x:r.x-14+Math.random()*4,y:ry(r)-15+Math.random()*7,vx:-20-Math.random()*30,vy:TS.fire?-25-Math.random()*30:-12+Math.random()*14,life:.5+Math.random()*.5,c:TS.pc[(Math.random()*TS.pc.length)|0],sz:1,shape:TS.p,g:TS.fire?-15:0});
     }
   }
+  // zoom: pull back on big air and in bullet time so the landing (and the ramp) stays in view
+  { let zt=1; const p0=players[0];
+    if(!twoP && !demo && (mode==='race'||mode==='finish')){
+      if(freeMode) zt=Math.min(zt,fr.herdZoom||1);
+      if(p0.state==='air'||p0.state==='phase'){ const hg=p0.alt-heightAt(p0.x); zt=Math.min(zt,1-clamp((hg-18)/110,0,1)*.3); }
+      if(slowT>0) zt=Math.min(zt,.7);
+    }
+    viewZoom+=(zt-viewZoom)*Math.min(1,dt*(zt<viewZoom?3.5:1.6)); }
   // cameras
   const views = (twoP && !demo) ? players : [players[0]];
   views.forEach((p,i)=>{ const c=cams[i], lead=clamp((p.vx-p.P.top)*.35,0,60);
-    const z=(freeMode&&!demo)?fr.zoom:1;
+    const z=(!twoP&&!demo)?viewZoom:1;
     c.x+=(p.x-100/z+lead-c.x)*Math.min(1,dt*8);
     const headY=ry(p)-30; c.y+=(Math.max(0,36-headY)-c.y)*Math.min(1,dt*7);
     const feetS=ry(p)+c.y; if(feetS>180/z-16) c.y=180/z-16-ry(p); if(headY+c.y<14) c.y=Math.max(0,14-headY); });

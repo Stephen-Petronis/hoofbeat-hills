@@ -15,11 +15,18 @@ const CONFIG = {
     pegasus: { name:'Pegasus',  top:134, accel:140, gravity:540, jump:250, jump2:0,   airJumps:0, glideTime:1.7, glideFall:38, uphillDrag:0.7, uphillMin:0.6, wingHop:true },
     // secret racer: picking it turns every level into Halloween; slime doesn't slow it and skeleton horses are its friends
     skelly:  { name:'Skeleton Horse', top:146, accel:150, gravity:600, jump:240, jump2:0, airJumps:0, glideTime:0, glideFall:0, swim:true, ghostFriend:true, hoverTime:2.4, alwaysTrail:true },
+    // boss horses: unlocked by beating them in their boss race
+    queen:   { name:'Moon Queen',    top:146, accel:150, gravity:580, jump:245, jump2:0, airJumps:0, glideTime:0, glideFall:0, power:'moon' },
+    dragon:  { name:'Dragon Pony',   top:150, accel:150, gravity:600, jump:240, jump2:0, airJumps:0, glideTime:0, glideFall:0, power:'fire' },
+    king:    { name:'Mountain King', top:140, accel:150, gravity:600, jump:235, jump2:0, airJumps:0, glideTime:0, glideFall:0, charge:true, uphillDrag:0.9, uphillMin:0.45 },
     seapony: { name:'Sea Pony', top:144, accel:150, gravity:580, jump:240, jump2:0,   airJumps:0, glideTime:0,   glideFall:0, swim:true },
   },
-  defaultNames: { unicorn:'Sparkle', pegasus:'Breeze', skelly:'Boney', seapony:'Coral' },
+  defaultNames: { unicorn:'Sparkle', pegasus:'Breeze', skelly:'Boney', queen:'Luna', dragon:'Ember', king:'Granite', seapony:'Coral' },
   rivals: [ { kind:'clover', name:'Clover', lane:0, top:124 }, { kind:'plum', name:'Plum', lane:2, top:136 } ],
-  bosses: { queen:{ name:'The Moon Queen', top:150, trail:'stars' }, dragon:{ name:'Dragon Pony', top:155, trail:'candy' } },
+  bosses: { queen:{ name:'The Moon Queen', top:150, trail:'stars' }, dragon:{ name:'Dragon Pony', top:155, trail:'candy' }, king:{ name:'The Mountain King', top:148, trail:'aurora', uphillMin:.8 } },
+  bossOrder: ['queen','dragon','king'],
+  // powers: seconds of effect and seconds to recharge
+  powers: { fireTime:2.4, fireSpeed:1.8, fireCooldown:7, phaseTime:1.6, phaseCooldown:7, chargeTime:.9, chargeSpeed:1.9 },
   bossEvery: 4,          // every 4th level is a boss race
   bossBonus: 25,         // gems for beating a boss
   unlockSeaPonyAt: 8,    // beat this level's boss to unlock the Sea Pony
@@ -57,12 +64,12 @@ const store = {
   get(k,d){ try{ const v = localStorage.getItem('hoofbeat.'+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
   set(k,v){ try{ localStorage.setItem('hoofbeat.'+k, JSON.stringify(v)); }catch(e){} }
 };
-const save = Object.assign({ gems:0, maxLevel:store.get('maxLevel',1)||1, owned:{}, equip:{}, names:{}, seapony:false,
+const save = Object.assign({ gems:0, maxLevel:store.get('maxLevel',1)||1, owned:{}, equip:{}, names:{}, seapony:false, unlocked:{},
   noLose:false, ghost:true, autoGallop:store.get('autoGallop',false), muted:store.get('muted',false) }, store.get('save',{}));
 save.owned = Object.assign({ mane:['default'], hat:['none'], trail:['rainbow'] }, save.owned);
 if(save.seapony && !save.owned.trail.includes('fire')) save.owned.trail.push('fire');
 const persist = () => store.set('save', save);
-const equipOf = k => (save.equip[k] ||= { mane:'default', hat:'none', trail:k==='skelly'?'fire':'rainbow' });
+const equipOf = k => (save.equip[k] ||= { mane:'default', hat:k==='queen'?'crown':'none', trail:k==='skelly'?'fire':k==='queen'?'stars':'rainbow' });
 const ponyName = k => (save.names[k] || CONFIG.defaultNames[k] || CONFIG.ponies[k]?.name || '').toUpperCase();
 
 /* ---------------- Sprite factory: smooth shapes -> quantized pixel art with outline ---------------- */
@@ -101,6 +108,7 @@ const PONY = {
   clover: { body:'#ffd9c2', snout:'#ffe9dc', mA:'#2fb98a', mB:'#8fe8c6', hoof:'#b97a6a', shade:'#eec0a6' },
   plum:   { body:'#a98ae6', snout:'#c4adf2', mA:'#ff7fc1', mB:'#ffc0e0', hoof:'#5a3f99', shade:'#9177cf' },
   queen:  { body:'#5a62d6', snout:'#7d85ea', mA:'#eef0ff', mB:'#b9c2ff', hoof:'#2b2d6e', shade:'#4950b8', horn:'#fff4a8' },
+  king:   { body:'#c4c8e6', snout:'#dde0f4', mA:'#ffffff', mB:'#cfe0ff', hoof:'#5a5e80', shade:'#a4a9cc', horn:'#ffcf5a' },
   dragon: { body:'#5fcf8f', snout:'#a3f0c2', mA:'#ff5f5f', mB:'#ffb36b', hoof:'#2f7f5a', shade:'#47b276', wing:'#c48cf0', wing2:'#a66fd9', horn:'#ffd76a' },
   mystery:{ body:'#4a3466', snout:'#4a3466', mA:'#4a3466', mB:'#4a3466', hoof:'#4a3466', shade:'#4a3466', out:'#8a6bbf' },
 };
@@ -114,8 +122,8 @@ const LEGS = {
 const TAILY = { r0:0, r1:1, r2:0, r3:-1, air:-1 };
 function ponySprite(kind, frame, wing, mane){
   const C = Object.assign({}, PONY[kind]); if(mane){ C.mA=mane[0]; C.mB=mane[1]; }
-  const horn = kind==='unicorn'||kind==='queen', winged = kind==='pegasus'||kind==='dragon', fins = kind==='seapony', horns = kind==='dragon';
-  const pal = [C.body,C.snout,C.mA,C.mB,C.hoof,C.shade]; if(horn||horns) pal.push(C.horn); if(winged) pal.push(C.wing,C.wing2); if(fins) pal.push(C.fin);
+  const horn = kind==='unicorn'||kind==='queen', winged = kind==='pegasus'||kind==='dragon', fins = kind==='seapony', horns = kind==='dragon', rams = kind==='king';
+  const pal = [C.body,C.snout,C.mA,C.mB,C.hoof,C.shade]; if(horn||horns||rams) pal.push(C.horn); if(winged) pal.push(C.wing,C.wing2); if(fins) pal.push(C.fin);
   const legs = LEGS[frame], ty = TAILY[frame], tx = frame==='air'?-1:0;
   return makeSprite(36,32,pal,x=>{
     x.translate(0,2);
@@ -135,6 +143,7 @@ function ponySprite(kind, frame, wing, mane){
     E(26.4,5,1.7,1.5,C.mB);
     if(horn) poly(x,C.horn,[26.6,5.2,28.4,5.6,31,-0.6]);
     if(horns){ poly(x,C.horn,[25.6,5,26.4,1.5,27.6,5]); poly(x,C.horn,[27.6,5.6,29.4,3,29.6,6.4]); }
+    if(rams){ E(23.6,5.4,2.7,2.5,C.horn); E(22.4,7.6,1.8,1.7,C.horn); E(25.4,3.4,1.5,1.3,C.horn); }
     if(winged){
       if(wing==='up') poly(x,C.wing,[12,14,9,8,9,3,11.5,4.5,13,0.5,15.5,4,18,1.5,19.5,7,19,13]);
       else if(wing==='down') poly(x,C.wing,[12,14,8.5,18,5,21,8.5,21.5,10,20.5,12,22.5,14.5,20.5,16,22,19,14]);
@@ -242,7 +251,7 @@ const THEMES = [
 ];
 const ROMAN=['','','II','III','IV','V','VI','VII','VIII','IX','X'];
 const isBoss = L => L%CONFIG.bossEvery===0;
-const bossKind = L => (L/CONFIG.bossEvery)%2===1 ? 'queen' : 'dragon';
+const bossKind = L => CONFIG.bossOrder[((L/CONFIG.bossEvery)-1)%CONFIG.bossOrder.length];
 const themeOf = L => THEMES[(L-1)%THEMES.length];
 let halloween=false;   // true when a player picked the Skeleton Horse
 const isHalloween=()=>chosen==='skelly' || (twoP && chosen2==='skelly');
@@ -376,7 +385,7 @@ function buildTrack(L){
   const notAll=()=>{ const l=[0,1,2]; l.splice(ri(0,2),1); if(R()<.65-.3*d) l.splice(ri(0,1),1); return l; };
   const gem=(x,lane,off,abs=false,big=false)=>gems.push({x:Math.round(x),ly:lane,off,abs,v:big?5:1,big,c:hash(Math.round(x)+lane)%3});
   const orb=(x,lane,off,abs=false)=>{ const r=R(); orbs.push({x:Math.round(x),ly:lane,off,abs,type:r<.4?'shield':r<.72?'magnet':'super'}); };
-  const autoClouds=[];
+  const autoClouds=[], autoPaths=[];
   FINISH_X=(style==='speedway'?8800:style==='mountains'?8400:6400)+Math.round(1500*d); TRACK_LEN=FINISH_X+600;
   let x=300; if(d>.25) fence(x,some()); gem(x,1,26); x+=150;
   let pats;
@@ -387,9 +396,13 @@ function buildTrack(L){
   if(style==='spooky') pats.push('kickGoo','rolls');
   if(boss && style==='classic') pats.push('cloud','cloud');
   if(d>.6) pats=pats.filter(p=>p!=='meadow');
+  // giant mountains with secret cloud paths: from chapter 2 on mountain worlds, and later everywhere but Spooky Hollow
+  if(style==='mountains' && d>=.3) pats.push('massif','massif');
+  else if(d>=.5 && style!=='spooky') pats.push('massif');
   let lastPat='';
   while(x<FINISH_X-560){
     let p=pick(pats); if(p===lastPat) p=pick(pats); lastPat=p;
+    if(p==='massif' && x>FINISH_X-3200) p=style==='mountains'?'peak':'rolls';
     if(p==='meadow'){ const len=ri(240,360), gl=ri(0,2); for(let i=0;i<8;i++) gem(x+20+i*(len-40)/7,(gl+(i>3?1:0))%3,7);
       pads.push({x:x+len/2,lane:ri(0,2)}); if(R()<.4) orb(x+len*.7,ri(0,2),12); x+=len; }
     else if(p==='rolls'){ const w=ri(120,180),h=ri(14,30); roll(x,w,h); roll(x+w,w,h); gem(x+w/2,1,12); gem(x+w*1.5,1,12);
@@ -449,6 +462,16 @@ function buildTrack(L){
       if(R()<.5) orb(xs[2],ri(0,2),30);
       maybe(()=>fence(xs[6]+ri(30,60),some()));
       x=xs[7]+60; }
+    else if(p==='massif'){ // two huge peaks and a deep valley. Low road: obstacles. High road: a secret cloud path between the summits
+      const sc=.8+.7*d, h1=Math.round(ri(190,240)*sc), h2=Math.round(ri(200,260)*sc);
+      const xs=profile(x,[[ri(240,300),Math.round(h1*.5)],[ri(70,100),Math.round(h1*.45)],[ri(200,260),h1],[ri(40,60),h1+4],[ri(220,280),ri(10,25)],[ri(150,210),ri(10,25)],
+        [ri(240,300),Math.round(h2*.55)],[ri(60,90),Math.round(h2*.5)],[ri(180,230),h2],[ri(40,60),h2+4],[ri(260,320),ri(20,40)],[ri(90,110),0]]);
+      const v0=xs[4], v1=xs[5];
+      thorns(v0+15,Math.max(40,Math.round((v1-v0)*.6)),R()<.3+.6*d?ALL:some()); maybe(()=>fence(v1+30,some())); maybe(()=>fence(xs[1]+20,some()));
+      gem(v0+(v1-v0)/2,ri(0,2),40);
+      autoPaths.push({top:xs[3]-20,until:xs[8],lane:ri(0,2)});
+      if(R()<.5+.4*d) autoPaths.push({top:xs[9]-20,until:xs[11]+200,lane:ri(0,2),short:true});
+      x=xs[11]+80; }
     const gapMin = style==='speedway'?160:70, gapMax = style==='speedway'?300:150;
     x+=ri(gapMin,gapMax)+Math.round(60*(1-d));
     if(R()<(style==='speedway'?.6:.4)) pads.push({x:x-35,lane:ri(0,2)});
@@ -459,6 +482,10 @@ function buildTrack(L){
   for(let pass=0;pass<2;pass++){ const c=HT.slice(0,TRACK_LEN+4); for(let i=2;i<TRACK_LEN-2;i++) HT[i]=(c[i-2]+c[i-1]+c[i]+c[i+1]+c[i+2])/5; }
   for(const ac of autoClouds){ let m=0; for(let i=ac.x;i<=ac.x+ac.len;i+=4) m=Math.max(m,heightAt(i)); const h=Math.round(m+22);
     clouds.push({x:ac.x,len:ac.len,h}); for(let i=0;i<4;i++) gem(ac.x+18+(ac.len-36)*i/3,ac.lane,h+9,true); }
+  for(const ap of autoPaths){ const s0=ap.top+24, h=Math.round(heightAt(ap.top))+8; let e=s0+40;
+    while(e<ap.until && heightAt(e)<h-12) e+=4; if(ap.short) e=Math.min(e,s0+260);
+    const len=e-s0; if(len<80) continue; clouds.push({x:s0,len,h,secret:true});
+    const n=Math.floor(len/40); for(let i=0;i<n;i++) gem(s0+20+i*40,ap.lane,h+9,true,i===Math.floor(n/2)); }
   for(const g of gems){ g.alt=(g.abs?0:heightAt(g.x))+g.off; g.taken=false; g.pull=null; }
   for(const o of orbs){ o.alt=(o.abs?0:heightAt(o.x))+o.off; o.taken=false; }
 }
@@ -496,6 +523,8 @@ const SFX = {
   highfive(){ noise(.12,.14); arp([84,88,91,96,100],.05,.05,'square'); }, turbo(){ tone(380,.4,'sawtooth',.028,1500); },
   ghost(){ tone(420,.5,'sine',.05,700); tone(630,.45,'triangle',.018,900); },
   flap(){ tone(300,.12,'triangle',.05,700); tone(500,.12,'triangle',.03,900,ac&&ac.currentTime+.08); },
+  fire(){ noise(.3,.1); tone(200,.4,'sawtooth',.04,900); }, moon(){ arp([84,91,96,103],.05,.03,'sine'); tone(600,.5,'sine',.03,300); },
+  charge(){ tone(160,.3,'square',.05,420); noise(.12,.06); },
   warn(){ tone(880,.08,'square',.04); tone(880,.08,'square',.04,0,ac&&ac.currentTime+.14); },
   smooth(){ arp([79,86],.05,.03,'triangle'); }, dive(){ tone(900,.22,'square',.035,220); }, slam(){ noise(.15,.1); arp([72,79,84,91],.04,.045,'square'); }, rattle(){ for(let i=0;i<4;i++) tone(900+i*120,.04,'square',.03,0,ac&&ac.currentTime+i*.05); },
 };

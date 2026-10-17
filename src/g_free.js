@@ -97,7 +97,7 @@ function freeTick(dt){
   const pAir=p.state==='air';
   if(pAir && !fr.pAir) for(const f of herd) f.hopDelay=.12*(f.slot+1);   // the herd jumps after you, one by one
   fr.pAir=pAir;
-  const zt=1-.06*herd.length; fr.zoom+=(zt-fr.zoom)*Math.min(1,dt*1.5);
+  fr.herdZoom=1-.06*herd.length;
   fr.friendT-=dt;
   if(fr.friendT<=0 && friends.length-herd.length<3 && friends.length<9){ fr.friendT=2.5+frR()*3.5; spawnFriend(p); }
   for(let i=friends.length-1;i>=0;i--){ const f=friends[i]; stepFriend(f,dt); if(f.x<p.x-450||f.x>p.x+700) friends.splice(i,1); }
