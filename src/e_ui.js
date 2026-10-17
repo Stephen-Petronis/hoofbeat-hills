@@ -109,6 +109,7 @@ function startRace(){
   show(null); hud.hidden=twoP; hud2.hidden=!twoP; document.querySelector('.hud-c').hidden=freeMode; placeEl.hidden=freeMode; $('quitBtn').textContent=freeMode?'END RUN':'QUIT RACE';
   if(!twoP) $('meterLabel').textContent=CONFIG.ponies[chosen].power==='fire'?'FIRE':CONFIG.ponies[chosen].power==='moon'?'MOON':CONFIG.ponies[chosen].charge?'CHARGE':CONFIG.ponies[chosen].hoverTime?'GHOST':CONFIG.ponies[chosen].glideTime?'WINGS':CONFIG.ponies[chosen].airJumps?'JUMPS':'JUMP';
   mode='countdown'; countdown=3; lastCount=0; for(const I of INP){ for(const k in NO_INPUT) I[k]=false; I.tap=false; I.ptap=false; I.lanes.length=0; }
+  drawJumpIcon();
   { const pw=CONFIG.ponies[chosen].power; $('powerBtn').hidden=twoP||!pw; $('powerBtn').textContent=pw==='fire'?'FIRE':pw==='moon'?'MOON':'POWER'; layout(); }
   $('lvl').textContent=freeMode?'FREE RUN':'LV '+level;
   const boss=!twoP && !freeMode && isBoss(level);
@@ -281,6 +282,10 @@ function layout(){
 }
 addEventListener('resize',layout); addEventListener('orientationchange',()=>setTimeout(layout,200));
 
+/* ---------- jump button icon: your horse, mid-leap ---------- */
+function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,40,38);
+  const k=chosen, eq=equipOf(k); x.drawImage(ponySet(k,eq.mane).air,2,5);
+  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,2+h.dx-1,5+h.dy-1); } }
 /* ---------- previews ---------- */
 let previews=[];
 function refreshPreviews(){ previews=[...document.querySelectorAll('canvas.pv')].map(c=>{ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; return [c.dataset.k,x]; }); }
@@ -299,7 +304,7 @@ function drawPreviews(){
 }
 
 /* ---------- loop ---------- */
-buildCards(); updateKeys(); layout(); if(document.fonts) document.fonts.ready.then(layout);
+buildCards(); updateKeys(); drawJumpIcon(); layout(); if(document.fonts) document.fonts.ready.then(layout);
 setupRace(true);
 let last=performance.now(), acc=0;
 function frame(now){

@@ -93,13 +93,38 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .b-a{background:var(--pink);color:var(--plum)}
 .pl2{display:flex;align-items:center;gap:12px}
 .lanes{display:grid;gap:6px}
-.lanes.one{gap:10px;flex:0 1 240px;min-width:0}
-.lanes.one button{width:100%;height:calc(var(--k)*1.45);font-size:34px;border-radius:20px}
-.lanes.one button small{font-size:9px}
-#pad .act1{display:flex;align-items:center;gap:14px}
-#pad .power1{border-radius:50%;width:calc(var(--k)*1.45);height:calc(var(--k)*1.45);font-size:11px;background:var(--gold);color:var(--plum)}
+.lanes.one{gap:12px;flex:0 1 240px;min-width:0}
+/* juicy lane buttons: domed toward the direction they move you */
+.lanes.one button{position:relative;width:100%;height:calc(var(--k)*1.45);border:0;color:var(--plum);
+  background:linear-gradient(#f1ebff,#d4c2ff 55%,#a98ee8);
+  box-shadow:0 0 0 3px var(--plum),0 7px 0 3px var(--plum),inset 0 5px 0 rgba(255,255,255,.6),inset 0 -7px 0 rgba(58,35,80,.2)}
+.lanes.one .lane-up{border-radius:50% 50% 22px 22px / 62% 62% 22px 22px}
+.lanes.one .lane-dn{border-radius:22px 22px 50% 50% / 22px 22px 62% 62%}
+.lanes.one button.on{transform:translateY(5px) scale(.98);box-shadow:0 0 0 3px var(--plum),0 2px 0 3px var(--plum),inset 0 5px 0 rgba(255,255,255,.6),inset 0 -4px 0 rgba(58,35,80,.2)}
+.lanes.one svg{width:44%;max-width:84px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 0 rgba(58,35,80,.35))}
+.lanes.one svg path{fill:var(--pink);stroke:var(--plum);stroke-width:3.5;stroke-linejoin:round}
+.lanes.one svg .shine{fill:rgba(255,255,255,.7);stroke:none}
+.lanes.one button small{font-size:9px;pointer-events:none}
+#pad .act1{display:flex;align-items:center;gap:22px}
+/* big juicy drum-style JUMP button with a horse and glitter */
+#pad .jump1{position:relative;border-radius:50%;width:min(calc(var(--k)*2.8),44vw);height:min(calc(var(--k)*2.8),44vw);border:0;padding:0;color:var(--plum);overflow:visible;
+  background:radial-gradient(circle at 50% 36%,#ffe3f1 0 14%,#ff9fcd 38%,#ff5fa8 64%,#e0458c 76%);
+  box-shadow:0 0 0 6px var(--cream),0 0 0 12px var(--gold),0 0 0 15px var(--plum),0 9px 0 15px var(--plum),inset 0 -12px 0 rgba(58,35,80,.22),inset 0 8px 0 rgba(255,255,255,.35)}
+#pad .jump1::before{content:"";position:absolute;left:18%;top:9%;width:40%;height:20%;border-radius:50%;background:rgba(255,255,255,.55);transform:rotate(-18deg);pointer-events:none}
+#pad .jump1::after{content:"";position:absolute;inset:8%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 1.5px,transparent 2.5px) 12% 30%/22% 26%,radial-gradient(circle,#fff4a8 0 1.5px,transparent 2.5px) 70% 60%/28% 24%,radial-gradient(circle,#fff 0 1px,transparent 2px) 40% 80%/18% 20%;
+  animation:glitter 1.4s steps(4) infinite}
+@keyframes glitter{0%{background-position:12% 30%,70% 60%,40% 80%;opacity:1}50%{opacity:.4}100%{background-position:20% 18%,58% 72%,52% 68%;opacity:1}}
+#pad .jump1 canvas{width:52%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;margin-top:-6%}
+#pad .jump1 .jl{font-size:12px;letter-spacing:.08em;color:var(--plum);text-shadow:1px 1px 0 #fff4fb;pointer-events:none;margin-top:-4%}
+#pad .jump1.on{transform:translateY(6px) scale(.94);box-shadow:0 0 0 6px var(--cream),0 0 0 12px #fff4a8,0 0 0 15px var(--plum),0 3px 0 15px var(--plum),0 0 24px 18px rgba(255,111,174,.45),inset 0 -6px 0 rgba(58,35,80,.22),inset 0 8px 0 rgba(255,255,255,.35)}
+#pad .power1{border-radius:50%;width:calc(var(--k)*1.4);height:calc(var(--k)*1.4);font-size:11px;border:0;color:var(--plum);
+  background:radial-gradient(circle at 50% 35%,#fff6c8 0 16%,#ffd76a 55%,#e8a91f 78%);
+  box-shadow:0 0 0 4px var(--cream),0 0 0 7px var(--plum),0 6px 0 7px var(--plum),inset 0 -6px 0 rgba(58,35,80,.2)}
+#pad .power1.on{transform:translateY(4px) scale(.95);box-shadow:0 0 0 4px var(--cream),0 0 0 7px var(--plum),0 2px 0 7px var(--plum)}
 #pad .power1.cool{opacity:.45}
-#pad .jump1{border-radius:999px;width:calc(var(--k)*2.9);height:calc(var(--k)*2.1);font-size:16px;background:var(--pink);color:var(--plum)}.lanes button{width:var(--k);height:var(--k)}
+@media (prefers-reduced-motion:reduce){#pad .jump1::after{animation:none}}
+.lanes button{width:var(--k);height:var(--k)}.lanes button{width:var(--k);height:var(--k)}
 .pl2.p1 .jb{background:var(--pink);color:var(--plum)}.pl2.p2 .jb{background:var(--mint);color:var(--plum)}
 #keys{display:none;font-family:var(--f-body);font-size:15px;color:var(--lilac);text-align:center;margin:0;max-width:70ch}
 #keys kbd{font-family:var(--f-pixel);font-size:10px;background:var(--plum);border:2px solid var(--grape);border-radius:5px;padding:3px 5px;color:var(--cream)}
@@ -219,10 +244,10 @@ h2{font-family:var(--f-pixel);font-size:clamp(14px,3vw,22px);margin:0;color:var(
 
   <div id="pad" class="pad">
     <div class="lanes one">
-      <button data-p="0" data-act="up" aria-label="Lane up">▲</button>
-      <button data-p="0" data-act="down" aria-label="Lane down, or dive while in the air">▼<small>DIVE</small></button>
+      <button data-p="0" data-act="up" class="lane-up" aria-label="Lane up"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg></button>
+      <button data-p="0" data-act="down" class="lane-dn" aria-label="Lane down, or dive while in the air"><svg viewBox="0 0 40 30" style="transform:rotate(180deg);filter:drop-shadow(0 -3px 0 rgba(58,35,80,.35))" aria-hidden="true"><path d="M20 3 C22 3 23 4 24 5.5 L36 22 C38 25 36.5 27 33.5 27 L6.5 27 C3.5 27 2 25 4 22 L16 5.5 C17 4 18 3 20 3 Z"/><path class="shine" d="M17 9 L11 17 C10 18.5 11.5 19 12.5 18 L18 11 C19 9.5 18 8 17 9 Z"/></svg><small>DIVE</small></button>
     </div>
-    <div class="act1"><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button><button data-p="0" data-act="jump" class="jump1">JUMP</button></div>
+    <div class="act1"><button data-p="0" data-act="power" class="power1" id="powerBtn" hidden>POWER</button><button data-p="0" data-act="jump" class="jump1" aria-label="Jump"><canvas id="jumpIcon" width="40" height="38"></canvas><span class="jl">JUMP</span></button></div>
   </div>
   <div id="pad2" class="pad">
     <div class="pl2 p1">
@@ -1913,6 +1938,7 @@ function startRace(){
   show(null); hud.hidden=twoP; hud2.hidden=!twoP; document.querySelector('.hud-c').hidden=freeMode; placeEl.hidden=freeMode; $('quitBtn').textContent=freeMode?'END RUN':'QUIT RACE';
   if(!twoP) $('meterLabel').textContent=CONFIG.ponies[chosen].power==='fire'?'FIRE':CONFIG.ponies[chosen].power==='moon'?'MOON':CONFIG.ponies[chosen].charge?'CHARGE':CONFIG.ponies[chosen].hoverTime?'GHOST':CONFIG.ponies[chosen].glideTime?'WINGS':CONFIG.ponies[chosen].airJumps?'JUMPS':'JUMP';
   mode='countdown'; countdown=3; lastCount=0; for(const I of INP){ for(const k in NO_INPUT) I[k]=false; I.tap=false; I.ptap=false; I.lanes.length=0; }
+  drawJumpIcon();
   { const pw=CONFIG.ponies[chosen].power; $('powerBtn').hidden=twoP||!pw; $('powerBtn').textContent=pw==='fire'?'FIRE':pw==='moon'?'MOON':'POWER'; layout(); }
   $('lvl').textContent=freeMode?'FREE RUN':'LV '+level;
   const boss=!twoP && !freeMode && isBoss(level);
@@ -2085,6 +2111,10 @@ function layout(){
 }
 addEventListener('resize',layout); addEventListener('orientationchange',()=>setTimeout(layout,200));
 
+/* ---------- jump button icon: your horse, mid-leap ---------- */
+function drawJumpIcon(){ const c=$('jumpIcon'); if(!c) return; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,40,38);
+  const k=chosen, eq=equipOf(k); x.drawImage(ponySet(k,eq.mane).air,2,5);
+  if(eq.hat!=='none' && HATS[eq.hat]){ const h=HATS[eq.hat]; x.drawImage(h.spr,2+h.dx-1,5+h.dy-1); } }
 /* ---------- previews ---------- */
 let previews=[];
 function refreshPreviews(){ previews=[...document.querySelectorAll('canvas.pv')].map(c=>{ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; return [c.dataset.k,x]; }); }
@@ -2103,7 +2133,7 @@ function drawPreviews(){
 }
 
 /* ---------- loop ---------- */
-buildCards(); updateKeys(); layout(); if(document.fonts) document.fonts.ready.then(layout);
+buildCards(); updateKeys(); drawJumpIcon(); layout(); if(document.fonts) document.fonts.ready.then(layout);
 setupRace(true);
 let last=performance.now(), acc=0;
 function frame(now){
