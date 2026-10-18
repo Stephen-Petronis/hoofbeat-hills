@@ -19,9 +19,11 @@ let flipV=1, flipTarget=1, rbClock=0, rbWarned=false, invOn=false;
 const controlsSwapped=()=>!!(WR.mirror || (WR.flipEvery && flipTarget<0));
 const textBackwards=()=>['countdown','race','finish'].includes(mode) && !demo && !twoP && (WR.backwards || (WR.flipEvery && flipTarget<0));
 // STAR TURBO meter
-function addStar(r,v){ if(!r.isPlayer||demo||twoP||r.starT>0) return; const was=(r.star||0)>=1; r.star=Math.min(1,(r.star||0)+v); if(!was && r.star>=1){ SFX.fanfare(); toast('STAR TURBO READY!'); } }
+// the meter carries over between races: whatever is left is saved and waiting next time
+function addStar(r,v){ if(!r.isPlayer||demo||twoP||r.starT>0) return; const old=r.star||0, was=old>=1; r.star=Math.min(1,old+v);
+  save.star=r.star; if(Math.floor(old*20)!==Math.floor(r.star*20)) persist(); if(!was && r.star>=1){ SFX.fanfare(); toast('STAR TURBO READY!'); } }
 function useStar(r){ if(r.state==='tumble') return; if((r.star||0)<1 || r.starT>0){ SFX.nope(); return; }
-  r.star=0; r.starT=CONFIG.star.time; r.vx=Math.max(r.vx,r.P.top*1.4); startFab('gold',CONFIG.star.time+.4); emit('star',r); }
+  r.star=0; save.star=0; persist(); r.starT=CONFIG.star.time; r.vx=Math.max(r.vx,r.P.top*1.4); startFab('gold',CONFIG.star.time+.4); emit('star',r); }
 // flippy flop: double-tap jump in the air
 function startFlip(r){ if(r.flipT>0) return; r.flipT=CONFIG.flip.time; if(r.isPlayer && !demo) SFX.double(); }
 function flipReward(r){
@@ -49,6 +51,7 @@ function setupRace(isDemo){
   players=[mkP(chosen,two?0:1,0)];
   if(two) players.push(mkP(chosen2,2,1));
   racers=[...players];
+  if(!isDemo && !two) players[0].star=clamp(+save.star||0,0,1);
   const spooky=themeOf(level).spooky||halloween, rv=1+.15*levelDifficulty(level);
   const skel=(i,lane,ahead)=>makeRacer('skeleton',{top:(122+10*i)*sp*rv,accel:125*sp,gravity:560,jump:240,jump2:0,airJumps:0,glideTime:0,glideFall:0},lane,
     {ai:true,skeleton:true,name:['BONES','RATTLES','SPOOKS'][i],spr:ponySet('skeleton'),x:START_X+ahead,prevX:START_X+ahead,wanderT:2+i*1.3});
