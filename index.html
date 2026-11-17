@@ -28,6 +28,9 @@ html,body{height:100%}
 body{background:radial-gradient(130% 90% at 50% -10%,#f27ad0 0%,#d24fb8 34%,#b03aa8 66%,#8a2a92 100%) fixed;color:var(--cream);font-family:var(--f-body);font-size:16px;overflow:hidden;
   touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
+/* game controller focus ring */
+.gp-focus{outline:4px solid #fff4a8!important;outline-offset:4px;box-shadow:0 0 0 8px rgba(255,111,174,.6),0 0 24px 8px rgba(255,215,106,.7)!important;animation:gpPulse .9s ease-in-out infinite}
+@keyframes gpPulse{50%{outline-color:#ff6fae}}
 /* the whole page: fuchsia candy plastic with a slow shine sweeping across + tiny glitter */
 body::before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
   background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.16) 47%,rgba(255,255,255,.32) 50%,rgba(255,255,255,.16) 53%,transparent 60%) no-repeat;
@@ -2795,7 +2798,7 @@ const keyAct=code=>{ if(twoP){ const m=KEY2[code]; return m?m:null; } const a=KE
 function updateKeys(){
   $('keys').innerHTML = twoP
     ? 'P1: <kbd>W</kbd><kbd>S</kbd> lanes (S in air = dive) · <kbd>D</kbd> jump &nbsp;&nbsp; P2: <kbd>↑</kbd><kbd>↓</kbd> lanes · <kbd>→</kbd> jump &nbsp;&nbsp; <kbd>P</kbd> pause'
-    : '<kbd>Space</kbd> jump (hold to glide or hover) · <kbd>↑</kbd><kbd>↓</kbd> change lane · <kbd>↓</kbd> in the air: dive · <kbd>C</kbd> star turbo · <kbd>X</kbd> power · <kbd>P</kbd> pause';
+    : '🎮 controllers work too · <kbd>Space</kbd> jump (hold to glide or hover) · <kbd>↑</kbd><kbd>↓</kbd> change lane · <kbd>↓</kbd> in the air: dive · <kbd>C</kbd> star turbo · <kbd>X</kbd> power · <kbd>P</kbd> pause';
   layout();
 }
 addEventListener('keydown',e=>{
@@ -2852,6 +2855,58 @@ function drawPreviews(){
     if(eq.hat!=='none'&&HATS[eq.hat]){ const h=HATS[eq.hat]; shopX.drawImage(h.spr,22+h.dx-1,6+h.dy-1); } }
 }
 
+/* ---------- game controllers (Switch Pro Controller, Joy-Cons, Xbox, PlayStation...) ----------
+   In a race:  stick or D-pad up/down = change lane (down in the air = dive)
+               A or B = jump (hold to glide/hover) · X or Y = STAR TURBO · L/R/ZL/ZR = POWER · + or - = pause
+   In menus:   stick or D-pad moves the glowing ring · A or B presses · + = start/pause
+   Two players: the first controller is player 1, the second is player 2. */
+const GP={ prev:{}, axis:{}, focus:null, known:new Set() };
+const GPB={ JUMP:[0,1], STAR:[2,3], POWER:[4,5,6,7], PAUSE:[8,9], UP:12, DOWN:13, LEFT:14, RIGHT:15 };
+function gpFocusables(){
+  const scr=[...document.querySelectorAll('.screen')].find(s=>!s.hidden); if(!scr) return [];
+  return [...scr.querySelectorAll('button,[tabindex="0"]')].filter(b=>!b.disabled && b.offsetParent!==null && !b.closest('[hidden]'));
+}
+function gpSetFocus(el){ if(GP.focus) GP.focus.classList.remove('gp-focus'); GP.focus=el; if(el){ el.classList.add('gp-focus'); el.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); } }
+function gpMove(dx,dy){
+  const els=gpFocusables(); if(!els.length) return;
+  if(!GP.focus || !els.includes(GP.focus)){ gpSetFocus(els.find(e=>/start|go|again|resume/i.test(e.id+' '+e.className))||els[0]); return; }
+  const r0=GP.focus.getBoundingClientRect(), cx=r0.left+r0.width/2, cy=r0.top+r0.height/2; let best=null, bd=1e9;
+  for(const e of els){ if(e===GP.focus) continue; const r=e.getBoundingClientRect(), ex=r.left+r.width/2-cx, ey=r.top+r.height/2-cy;
+    const along=ex*dx+ey*dy; if(along<=4) continue; const side=Math.abs(ex*dy-ey*dx), d=along+side*2.5; if(d<bd){ bd=d; best=e; } }
+  if(best){ gpSetFocus(best); if(typeof SFX!=='undefined' && SFX.smooth) SFX.smooth(); }
+}
+function pollPads(){
+  if(!navigator.getGamepads) return;
+  const pads=[...navigator.getGamepads()].filter(Boolean);
+  for(const gp of pads) if(!GP.known.has(gp.index)){ GP.known.add(gp.index); toast('🎮 CONTROLLER '+GP.known.size+' READY!'); }
+  pads.forEach((gp,slot)=>{
+    const id=gp.index, prev=GP.prev[id]||[], now=gp.buttons.map(b=>!!(b&&(b.pressed||b.value>.5)));
+    const ay=gp.axes[1]||0, ax=gp.axes[0]||0, pa=GP.axis[id]||{x:0,y:0};
+    const sy=ay>.55?1:ay<-.55?-1:Math.abs(ay)<.3?0:pa.y, sx=ax>.55?1:ax<-.55?-1:Math.abs(ax)<.3?0:pa.x;
+    const hit=i=>now[i]&&!prev[i], any=list=>list.some(hit), held=list=>list.some(i=>now[i]);
+    const up=hit(GPB.UP)||(sy===-1&&pa.y!==-1), down=hit(GPB.DOWN)||(sy===1&&pa.y!==1);
+    const left=hit(GPB.LEFT)||(sx===-1&&pa.x!==-1), right=hit(GPB.RIGHT)||(sx===1&&pa.x!==1);
+    const p=twoP?Math.min(slot,1):0, racing=['countdown','race','finish'].includes(mode);
+    if(now.some(Boolean)) audio();
+    if(mode==='cutscene'){ if(any([...GPB.JUMP,...GPB.STAR,...GPB.PAUSE])) cutsceneTap(); }
+    else if(mode==='dance'){ if(any(GPB.JUMP)) danceHit('jump'); if(up) danceHit('up'); if(down) danceHit('down'); if(any(GPB.STAR)) danceHit('jump'); }
+    else if(racing){
+      if(any(GPB.PAUSE)) pause(true);
+      if(up) press(p,'up',true); if(down) press(p,'down',true);
+      GP.lastJ=GP.lastJ||{}; const j=held(GPB.JUMP), wasJ=!!GP.lastJ[id]; if(j&&!wasJ) press(p,'jump',true); else if(!j&&wasJ) press(p,'jump',false); GP.lastJ[id]=j;
+      if(any(GPB.STAR)) press(p,'star',true); if(any(GPB.POWER)) press(p,'power',true);
+    }
+    else if(mode!=='photo'){
+      if(up) gpMove(0,-1); if(down) gpMove(0,1); if(left) gpMove(-1,0); if(right) gpMove(1,0);
+      if(any(GPB.JUMP)||any(GPB.STAR)){ const els=gpFocusables(); if(!GP.focus||!els.includes(GP.focus)) gpMove(0,0); if(GP.focus) GP.focus.click(); }
+      if(any(GPB.PAUSE)){ if(mode==='paused') pause(false); else if(mode==='title'){ audio(); goSelect(); } }
+    }
+    if(racing && GP.focus) gpSetFocus(null);
+    GP.prev[id]=now; GP.axis[id]={x:sx,y:sy};
+  });
+}
+addEventListener('gamepadconnected',()=>pollPads());
+
 /* ---------- loop ---------- */
 buildCards(); updateKeys(); drawJumpIcon(); layout(); if(document.fonts) document.fonts.ready.then(layout);
 setupRace(true);
@@ -2862,7 +2917,7 @@ function frame(now){
   acc+=rdt*(slowT>0?CONFIG.slowmo.scale:1);
   while(acc>=STEP){ update(STEP); acc-=STEP; }
   if(shake>0) shake=Math.max(0,shake-rdt*10);
-  render(); updateHud(rdt); drawPreviews();
+  pollPads(); render(); updateHud(rdt); drawPreviews();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

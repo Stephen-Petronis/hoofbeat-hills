@@ -17,6 +17,9 @@ html,body{height:100%}
 body{background:radial-gradient(130% 90% at 50% -10%,#f27ad0 0%,#d24fb8 34%,#b03aa8 66%,#8a2a92 100%) fixed;color:var(--cream);font-family:var(--f-body);font-size:16px;overflow:hidden;
   touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
+/* game controller focus ring */
+.gp-focus{outline:4px solid #fff4a8!important;outline-offset:4px;box-shadow:0 0 0 8px rgba(255,111,174,.6),0 0 24px 8px rgba(255,215,106,.7)!important;animation:gpPulse .9s ease-in-out infinite}
+@keyframes gpPulse{50%{outline-color:#ff6fae}}
 /* the whole page: fuchsia candy plastic with a slow shine sweeping across + tiny glitter */
 body::before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
   background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.16) 47%,rgba(255,255,255,.32) 50%,rgba(255,255,255,.16) 53%,transparent 60%) no-repeat;
