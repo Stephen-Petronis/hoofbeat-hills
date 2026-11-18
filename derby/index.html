@@ -9,8 +9,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;background:linear-gradient(#bfe9ff,#ffe9f6 70%);font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif;color:var(--ink);overflow:hidden;touch-action:none}
 #app{height:100vh;height:100dvh;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:1fr;grid-template-areas:"hud" "stage" "pad";padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-#hud{grid-area:hud;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;padding:6px 6px 2px;font-weight:900;font-size:clamp(13px,3.4vw,20px)}
-.chip{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 9px;box-shadow:0 3px 0 var(--ink);white-space:nowrap}
+#hud{grid-area:hud;display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:wrap;padding:6px 6px 2px;font-weight:900;font-size:clamp(13px,3.4vw,20px)}
+.chip{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 6px;box-shadow:0 3px 0 var(--ink);white-space:nowrap}
 button.chip{font:inherit;color:inherit;cursor:pointer}
 #stage{grid-area:stage;position:relative;display:flex;align-items:flex-start;justify-content:center;min-height:0;min-width:0;padding:4px}
 #wrap{position:relative;transform-origin:50% 50%;will-change:transform}
@@ -42,7 +42,8 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;borde
 .pbtn b{font-size:1.9em;line-height:1}
 .pbtn.on{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);filter:brightness(.92)}
 #wheel{width:clamp(120px,34vw,170px);height:clamp(120px,34vw,170px);touch-action:none;filter:drop-shadow(0 5px 0 rgba(90,45,110,.6))}#wheel svg{width:100%;height:100%;display:block}
-#bBoost{background:#ffd1ec}#bGas{background:var(--mint)}
+#bBoost{background:#ffd1ec}#bGas{background:var(--mint)}#bGal{background:#fff3a0}.pbtn.charge1{box-shadow:0 0 0 5px #7fb8ff,0 5px 0 var(--ink)}.pbtn.charge2{box-shadow:0 0 0 5px #ffb46b,0 5px 0 var(--ink)}.pbtn.charge3{box-shadow:0 0 0 5px #ff6fb5,0 5px 0 var(--ink)}
+.meter{display:inline-block;width:34px;height:10px;border:2px solid var(--ink);border-radius:6px;background:#fff;vertical-align:middle;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,#ff6fb5,#ffe66b,#7fe0c0)}
 @media (orientation:landscape) and (max-height:560px){
  #app{grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr;grid-template-areas:"hud hud hud" "padl stage padr"}
  #pad{display:contents}#pad.hide .grp{visibility:hidden}
@@ -57,7 +58,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;borde
  <div id="stage"><div id="wrap"><canvas id="cv" width="320" height="400"></canvas><div id="ov"></div></div></div>
  <div id="pad">
   <div class="grp" id="padL"><div id="wheel"><svg viewBox="0 0 100 100" id="wheelSvg"><circle cx="50" cy="50" r="45" fill="#ff8fc8" stroke="#5a2d6e" stroke-width="6"/><circle cx="50" cy="50" r="33" fill="#ffe9f6" stroke="#5a2d6e" stroke-width="4"/><path d="M17 50 H83 M50 50 V83" stroke="#5a2d6e" stroke-width="10" stroke-linecap="round"/><path d="M17 50 H83 M50 50 V83" stroke="#ffd1ec" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="11" fill="#ffd86b" stroke="#5a2d6e" stroke-width="4"/><text x="50" y="55" text-anchor="middle" font-size="13">🦄</text><rect x="45" y="2" width="10" height="9" rx="3" fill="#ffd86b" stroke="#5a2d6e" stroke-width="3"/></svg></div></div>
-  <div class="grp" id="padR"><div class="pbtn" id="bBoost"><b>✨</b>BOOST</div><div class="pbtn" id="bGas"><b>🐾</b><span id="gasLbl">GALLOP</span></div></div>
+  <div class="grp" id="padR"><div class="pbtn" id="bBoost"><b>✨</b>BOOST</div><div class="pbtn" id="bGal"><b>🐾</b>GALLOP</div><div class="pbtn" id="bGas"><b>✋</b><span id="gasLbl">WHOA</span></div></div>
  </div>
 </div>
 <script>
@@ -243,7 +244,7 @@ function newRacer(i,ai){
  if(i===0&&kind==='pegasus')look.body='#e3f1ff';
  const slot=[0,1,2,3].indexOf(i),back=6+Math.floor(slot/2)*8,lat=(slot%2?1:-1)*7;
  const k=(tr.N-back)%tr.N;
- return{i,ai,kind,look,st,x:tr.x[k]+tr.nx[k]*lat,y:tr.y[k]+tr.ny[k]*lat,a:tr.ang[k],vx:0,vy:0,z:0,vz:0,idx:k,lap:0,half:true,done:false,ft:0,nitro:st.nitro,boostT:0,mud:0,gp:Math.random()*6,lane:lat,laneT:0,laneTarget:lat/HW,lastRamp:-99,lastRiver:-99,dh:0,prevBoost:false,rb:1,wob:0,place:0}
+ return{i,ai,kind,look,st,x:tr.x[k]+tr.nx[k]*lat,y:tr.y[k]+tr.ny[k]*lat,a:tr.ang[k],vx:0,vy:0,z:0,vz:0,idx:k,lap:0,half:true,done:false,ft:0,nitro:st.nitro*1.2,boostT:0,drift:0,wasDrift:false,boosting:false,mud:0,gp:Math.random()*6,lane:lat,laneT:0,laneTarget:lat/HW,lastRamp:-99,lastRiver:-99,dh:0,prevBoost:false,rb:1,wob:0,place:0}
 }
 function setupRace(def,isDemo){
  demo=isDemo;raceDef=def;tr=buildTrack(def);
@@ -254,7 +255,7 @@ function setupRace(def,isDemo){
 const prog=r=>r.lap*tr.N+r.idx;
 
 /* ---------------- input ---------------- */
-const tilt={on:false,seen:false,raw:null,base:null,ang:0,steer:0,listening:false};
+const tilt={on:false,seen:false,raw:null,base:null,ang:0,steer:0,listening:false,disp:0,dv:0,lastA:null};
 function onMotion(e){const g=e.accelerationIncludingGravity;if(!g||g.x==null||g.y==null)return;if(Math.abs(g.x)+Math.abs(g.y)<3)return;tilt.seen=true;
  const a=Math.atan2(g.x,g.y);if(tilt.base==null)tilt.base=a;if(mode==='race'&&!demo&&countT>0)tilt.base=a;
  const th=-angDiff(a-tilt.base);tilt.ang+=(clamp(th,-.45,.45)-tilt.ang)*.3;const dz=.04,full=.3,v=Math.abs(tilt.ang)<dz?0:(tilt.ang-Math.sign(tilt.ang)*dz)/(full-dz);tilt.steer=clamp(v,-1,1)}
@@ -269,40 +270,41 @@ function applyTilt(){
  const on=camActive(),wr=$('wrap');wr.style.transform='';
  if(!view.parentNode)$('stage').appendChild(view);
  view.style.display=on?'block':'none';wr.style.visibility=on?'hidden':'visible';
- if(!on){cam.on=false;return}
+ if(!on){cam.on=false;tilt.disp=tilt.ang;tilt.dv=0;tilt.lastA=null;return}
  const st=$('stage'),dpr=Math.min(2,window.devicePixelRatio||1),cw=st.clientWidth,ch=st.clientHeight;
  if(view.width!==Math.round(cw*dpr)||view.height!==Math.round(ch*dpr)){view.width=Math.round(cw*dpr);view.height=Math.round(ch*dpr)}
  if(grassPal!==tr.pal){grassPat=makeGrass(tr.pal);grassPal=tr.pal}
  cam.x=W/2;cam.y=H/2;cam.on=true;
  cam.z=Math.min(cw/W,ch/H);cam.cw=cw;cam.ch=ch;
+ {const p=racers[0];let yaw=0;if(tilt.lastA!=null)yaw=angDiff(p.a-tilt.lastA)*60;tilt.lastA=p.a;
+  const tgt=tilt.ang+clamp(yaw*.03,-.08,.08),dt=1/60;tilt.dv+=((tgt-tilt.disp)*55-tilt.dv*9)*dt;tilt.disp+=tilt.dv*dt}
  const g=vctx;g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
- g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.ang);g.scale(cam.z,cam.z);g.translate(-cam.x,-cam.y);
+ g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.disp);g.scale(cam.z,cam.z);g.translate(-cam.x,-cam.y);
  g.fillStyle=grassPat;g.fillRect(cam.x-1500,cam.y-1500,3000,3000);
  g.drawImage(cv,0,0);g.restore();
- g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.ang);g.translate(-cw/2,-ch/2);drawTexts(g,cw,ch,Math.min(cw,ch)/320*1.1);g.restore();
+ g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.disp);g.translate(-cw/2,-ch/2);drawTexts(g,cw,ch,Math.min(cw,ch)/320*1.1);g.restore();
 }
-function viewToWorld(e){const b=view.getBoundingClientRect(),dx=e.clientX-b.left-cam.cw/2,dy=e.clientY-b.top-cam.ch/2,a=tilt.ang,c=Math.cos(a),s2=Math.sin(a);return{x:cam.x+(dx*c-dy*s2)/cam.z,y:cam.y+(dx*s2+dy*c)/cam.z}}
+function viewToWorld(e){const b=view.getBoundingClientRect(),dx=e.clientX-b.left-cam.cw/2,dy=e.clientY-b.top-cam.ch/2,a=tilt.disp,c=Math.cos(a),s2=Math.sin(a);return{x:cam.x+(dx*c-dy*s2)/cam.z,y:cam.y+(dx*s2+dy*c)/cam.z}}
 view.addEventListener('pointerdown',e=>{audio();target=viewToWorld(e);try{view.setPointerCapture(e.pointerId)}catch(_){}});
 view.addEventListener('pointermove',e=>{if(target)target=viewToWorld(e)});
 ['pointerup','pointercancel'].forEach(t=>view.addEventListener(t,()=>{target=null}));
-const keys={};const touch={l:false,r:false,gas:false,boost:false,wheel:0};let target=null;let gpPrev=[];
+const keys={};const touch={l:false,r:false,gas:false,gal:false,boost:false,wheel:0};let target=null;let gpPrev=[];
 function gamepad(){try{const gs=navigator.getGamepads?navigator.getGamepads():[];for(const g of gs)if(g&&g.connected)return g}catch(e){}return null}
 function readInput(r){
- let steer=0,gas=false,brake=false,boostHeld=false;
+ let steer=0,gas=false,drift=false,boostHeld=false;
  if(keys.ArrowLeft||keys.KeyA)steer-=1;if(keys.ArrowRight||keys.KeyD)steer+=1;
- if(keys.ArrowUp||keys.KeyW||keys.KeyZ)gas=true;if(keys.ArrowDown||keys.KeyS)brake=true;
+ if(keys.ArrowUp||keys.KeyW||keys.KeyZ)gas=true;if(keys.ArrowDown||keys.KeyS||keys.KeyC)drift=true;
  if(keys.Space||keys.KeyX||keys.ShiftLeft)boostHeld=true;
  steer+=touch.wheel;if(tiltActive())steer+=tilt.steer;if(touch.boost)boostHeld=true;
- if(touch.gas){if(save.auto)brake=true;else gas=true}
+ if(touch.gas)drift=true;if(touch.gal)gas=true;
  const gp=gamepad();
  if(gp){const ax=gp.axes[0]||0;if(Math.abs(ax)>.22)steer+=ax;if(gp.buttons[14]&&gp.buttons[14].pressed)steer-=1;if(gp.buttons[15]&&gp.buttons[15].pressed)steer+=1;
   const b=n=>gp.buttons[n]&&(gp.buttons[n].pressed||gp.buttons[n].value>.2);
-  if(b(0)||b(7)||b(12))gas=true;if(b(6)||b(13))brake=true;if(b(2)||b(1)||b(4)||b(5))boostHeld=true}
+  if(b(0)||b(7)||b(12))gas=true;if(b(6)||b(13)||b(1))drift=true;if(b(2)||b(4)||b(5))boostHeld=true}
  if(target){const da=angDiff(Math.atan2(target.y-r.y,target.x-r.x)-r.a);steer=clamp(da*2.6,-1,1);gas=Math.hypot(target.x-r.x,target.y-r.y)>6}
  steer=clamp(steer,-1,1);
- if(save.auto&&!brake)gas=true;
- const boost=boostHeld&&!r.prevBoost;r.prevBoost=boostHeld;
- return{steer,gas,brake,boost};
+ if(save.auto)gas=true;
+ return{steer,gas,drift,boost:boostHeld};
 }
 addEventListener('keydown',e=>{audio();if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;keys[e.code]=true;if(menuOpen())menuKey(e.code);else if(e.code==='Escape'||e.code==='KeyP')pauseGame()});
 addEventListener('keyup',e=>{keys[e.code]=false});
@@ -315,7 +317,7 @@ function bindPad(id,prop){const el=$(id);const on=e=>{e.preventDefault();audio()
  el.addEventListener('pointerdown',e=>{e.preventDefault();audio();cancelAnimationFrame(raf);id=e.pointerId;const b=el.getBoundingClientRect();cx=b.left+b.width/2;cy=b.top+b.height/2;lastA=ang(e);sx=e.clientX;try{el.setPointerCapture(id)}catch(_){}});
  el.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;const r=Math.hypot(e.clientX-cx,e.clientY-cy);let d;if(r>18){const a=ang(e);d=a-lastA;if(d>180)d-=360;if(d<-180)d+=360;lastA=a}else{d=(e.clientX-sx)*1.6;lastA=ang(e)}sx=e.clientX;set(deg+d)});
  const up=e=>{if(e.pointerId!==id)return;id=null;const back=()=>{set(deg*.7);if(Math.abs(deg)>1)raf=requestAnimationFrame(back);else set(0)};back()};
- el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('contextmenu',e=>e.preventDefault());})();bindPad('bGas','gas');bindPad('bBoost','boost');
+ el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('contextmenu',e=>e.preventDefault());})();bindPad('bGas','gas');bindPad('bBoost','boost');bindPad('bGal','gal');
 function toCanvas(e){const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*W,y:(e.clientY-b.top)/b.height*H}}
 cv.addEventListener('pointerdown',e=>{audio();if(mode!=='race'||demo)return;target=toCanvas(e);try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(target)target=toCanvas(e)});
@@ -331,11 +333,12 @@ function aiInput(r){
  const tx=tr.x[ti]+tr.nx[ti]*r.lane,ty=tr.y[ti]+tr.ny[ti]*r.lane;
  r.wob+=DT*(0.7+Math.random());
  const da=angDiff(Math.atan2(ty-r.y,tx-r.x)-r.a)+Math.sin(r.wob)*.06;
- const boost=r.nitro>0&&r.boostT<=0&&Math.abs(da)<.15&&sp>30&&Math.random()<DT*(demo?.5:.22);
- return{steer:clamp(da*2.6,-1,1),gas:Math.abs(da)<1.3,brake:Math.abs(da)>1.7&&sp>30,boost};
+ r.aiB=(r.aiB||0)-DT;if(r.aiB<=0&&r.nitro>0&&Math.abs(da)<.15&&sp>30&&Math.random()<DT*(demo?.5:.22))r.aiB=.7+Math.random()*.8;
+ return{steer:clamp(da*2.6,-1,1),gas:Math.abs(da)<1.3,drift:false,boost:r.aiB>0};
 }
 function spawnPart(x,y,z,col,n,spd,life,up){for(let k=0;k<n;k++){const a=Math.random()*6.28,s=Math.random()*spd;parts.push({x,y,z,vx:Math.cos(a)*s,vy:Math.sin(a)*s,vz:(up||0)*(0.5+Math.random()),life:life*(0.6+Math.random()*.6),max:life,col:typeof col==='string'?col:col[(Math.random()*col.length)|0]})}}
 const isPlayer=r=>r.i===0&&!demo;
+const tierOf=d=>d>2?3:d>1.2?2:d>.5?1:0;const DRIFT_COL=[['#ffffff','#e8e0ff'],['#7fb8ff','#cfe8ff'],['#ffb46b','#ffe66b'],['#ff6fb5','#ffd1ec']];
 function stepRacer(r,inp){
  const st=r.st,N=tr.N;
  const lat=(r.x-tr.x[r.idx])*tr.nx[r.idx]+(r.y-tr.y[r.idx])*tr.ny[r.idx];
@@ -347,17 +350,22 @@ function stepRacer(r,inp){
  let maxS=st.max*r.rb,acc=st.acc,grip=st.grip;
  const easyP=save.easy&&isPlayer(r);
  if(inMud){maxS*=easyP?.72:.48;grip*=easyP?.8:.5;r.mud=Math.min(1,r.mud+DT*1.6)}else if(onGrass)maxS*=.6;
- if(r.boostT>0){r.boostT-=DT;maxS*=1.45;acc*=2.4;r.mud=Math.max(0,r.mud-DT*.9)}
+ const holding=inp.boost&&r.nitro>0&&!air;
+ if(holding){r.nitro=Math.max(0,r.nitro-DT);if(!r.boosting&&isPlayer(r))SFX.boost()}r.boosting=holding;
+ if(r.boostT>0)r.boostT-=DT;
+ if(r.boostT>0||holding){maxS*=1.45;acc*=2.4;r.mud=Math.max(0,r.mud-DT*.9)}
+ const hb=inp.drift;let turnMul=1;
+ if(hb){grip*=.3;turnMul=1.65;maxS*=.93}
  r.mud=Math.max(0,r.mud-DT*.035);
- if(inp.boost&&r.nitro>0&&r.boostT<=0){r.nitro--;r.boostT=1.3;if(isPlayer(r))SFX.boost()}
  const fwd0=Math.abs(r.vx*Math.cos(r.a)+r.vy*Math.sin(r.a));
- if(easyP&&!r.done){const ti=(r.idx+10)%N,ln=clamp(lat,-(HW-6),HW-6),tx=tr.x[ti]+tr.nx[ti]*ln,ty=tr.y[ti]+tr.ny[ti]*ln;const da=angDiff(Math.atan2(ty-r.y,tx-r.x)-r.a);r.a+=clamp(da,-1,1)*3.2*(1-Math.abs(inp.steer)*.8)*DT*Math.min(1,.3+fwd0/30)}
- r.a+=inp.steer*st.turn*(easyP?.8:1)*Math.min(1,.4+fwd0/38)*DT*(air?.55:1);
+ if(easyP&&!r.done){const ti=(r.idx+10)%N,ln=clamp(lat,-(HW-6),HW-6),tx=tr.x[ti]+tr.nx[ti]*ln,ty=tr.y[ti]+tr.ny[ti]*ln;const da=angDiff(Math.atan2(ty-r.y,tx-r.x)-r.a);r.a+=clamp(da,-1,1)*3.2*(1-Math.abs(inp.steer)*.8)*(hb?.35:1)*DT*Math.min(1,.3+fwd0/30)}
+ r.a+=inp.steer*st.turn*turnMul*(easyP?.8:1)*Math.min(1,.4+fwd0/38)*DT*(air?.55:1);
  const ca=Math.cos(r.a),sa=Math.sin(r.a);
  let f=r.vx*ca+r.vy*sa,l=-r.vx*sa+r.vy*ca;
  if(!air){
   if(inp.gas)f+=acc*DT;
-  if(inp.brake)f-=(f>0?120:35)*DT;
+  if(hb&&fwd0>16&&(Math.abs(inp.steer)>.25||Math.abs(l)>8)){const before=tierOf(r.drift);r.drift+=DT;const t2=tierOf(r.drift);if(t2>before&&isPlayer(r))tone([0,660,880,1175][t2],.07,'square',.09);
+   if(Math.random()<.6)spawnPart(r.x-ca*5,r.y-sa*5,r.dh+1,DRIFT_COL[t2],1,22,.3,25)}
   f-=f*.55*DT;
   if(f>maxS)f-=(f-maxS)*Math.min(1,3.5*DT);
   if(f<-22)f=-22;
@@ -366,7 +374,9 @@ function stepRacer(r,inp){
   if(onGrass&&Math.abs(f)>20&&Math.random()<.25)spawnPart(r.x-ca*5,r.y-sa*5,0,[tr.pal.grass2,tr.pal.flowers[0]],1,10,.4,15);
  }
  r.vx=f*ca-l*sa;r.vy=f*sa+l*ca;
- if(r.boostT>0&&Math.random()<.8)spawnPart(r.x-ca*7,r.y-sa*7,r.z+r.dh+4,['#ff6fb5','#ffe66b','#7fe0c0','#7fb8ff','#ffffff'],1,8,.45,10);
+ if(!hb&&r.wasDrift){const t=tierOf(r.drift);if(t>0){r.boostT=Math.max(r.boostT,[0,.5,.9,1.4][t]);if(isPlayer(r)){SFX.boost();flash={txt:['','ZOOM!','SUPER ZOOM!','MEGA ZOOM!'][t],t:.9}}}r.drift=0}
+ r.wasDrift=hb;if(!hb)r.drift=0;
+ if((r.boostT>0||r.boosting)&&Math.random()<.8)spawnPart(r.x-ca*7,r.y-sa*7,r.z+r.dh+4,['#ff6fb5','#ffe66b','#7fe0c0','#7fb8ff','#ffffff'],1,8,.45,10);
  // ramps
  if(!air){for(const ri of tr.ramps){const d=(r.idx-ri+N)%N;if(d<=4&&raceT-r.lastRamp>.8&&f>22){r.lastRamp=raceT;r.vz=40+f*.62;r.z=.1;if(isPlayer(r))SFX.jump()}}}
  if(r.z>0||r.vz>0){r.vz-=st.grav*DT;r.z+=r.vz*DT;if(r.z<=0){r.z=0;r.vz=0;spawnPart(r.x,r.y,r.dh,[tr.pal.dirt2,tr.pal.edge],5,25,.35,20);if(isPlayer(r))SFX.land()}}
@@ -388,7 +398,7 @@ function collide(){for(let a=0;a<4;a++)for(let b=a+1;b<4;b++){const A=racers[a],
 function updatePickups(){
  spawnT-=DT;
  if(spawnT<=0&&pickups.length<3){spawnT=3+Math.random()*3;let i,tries=0;do{i=(Math.random()*tr.N)|0;tries++}while(tries<30&&(tr.ramps.some(ri=>idxDist(tr,i,ri)<8)||tr.river.some(ri=>idxDist(tr,i,ri)<8)||tr.bad(i)));const o=(Math.random()*2-1)*(HW-4);pickups.push({type:Math.random()<.4?'star':'coin',x:tr.x[i]+tr.nx[i]*o,y:tr.y[i]+tr.ny[i]*o,t:0})}
- for(let p=pickups.length-1;p>=0;p--){const pk=pickups[p];pk.t+=DT;for(const r of racers){if(r.z<8&&r.dh<1&&(r.x-pk.x)**2+(r.y-pk.y)**2<64){pickups.splice(p,1);if(pk.type==='star'){r.nitro=Math.min(r.nitro+1,9);if(isPlayer(r))SFX.star()}else if(isPlayer(r)){save.coins+=10;SFX.coin()}spawnPart(pk.x,pk.y,3,pk.type==='star'?['#ffe66b','#fff']:['#ffd23a','#fff3a0'],8,30,.5,30);break}}}
+ for(let p=pickups.length-1;p>=0;p--){const pk=pickups[p];pk.t+=DT;for(const r of racers){if(r.z<8&&r.dh<1&&(r.x-pk.x)**2+(r.y-pk.y)**2<64){pickups.splice(p,1);if(pk.type==='star'){r.nitro=Math.min(r.nitro+1.2,8);if(isPlayer(r))SFX.star()}else if(isPlayer(r)){save.coins+=10;SFX.coin()}spawnPart(pk.x,pk.y,3,pk.type==='star'?['#ffe66b','#fff']:['#ffd23a','#fff3a0'],8,30,.5,30);break}}}
 }
 function update(){
  if(mode!=='race')return;
@@ -472,12 +482,12 @@ function ordinal(n){return n+(['st','nd','rd'][n-1]||'th')}
 function standings(){return racers.slice().sort((a,b)=>{if(a.done&&b.done)return a.ft-b.ft;if(a.done)return -1;if(b.done)return 1;return prog(b)-prog(a)})}
 function hud(){
  let s;
- if(mode==='race'&&!demo){const p=racers[0],pos=standings().indexOf(p)+1;s=`<span class="chip">🏁 LAP ${clamp(p.lap,1,LAPS)}/${LAPS}</span><span class="chip">${['🥇','🥈','🥉','🎀'][pos-1]} ${ordinal(pos)}</span><span class="chip">✨×${p.nitro}</span><span class="chip">🪙 ${save.coins}</span><button class="chip" id="hPause">⏸</button>`}
+ if(mode==='race'&&!demo){const p=racers[0],pos=standings().indexOf(p)+1;s=`<span class="chip">🏁 LAP ${clamp(p.lap,1,LAPS)}/${LAPS}</span><span class="chip">${['🥇','🥈','🥉','🎀'][pos-1]} ${ordinal(pos)}</span><span class="chip">✨ <span class="meter"><i style="width:${Math.round(p.nitro/8*20)*5}%"></i></span></span><span class="chip">🪙 ${save.coins}</span><button class="chip" id="hPause">⏸</button>`}
  else s=`<span class="chip">🪙 ${save.coins}</span><span class="chip">Season ${save.season} · Race ${Math.min(save.race+1,TRACKS.length)}/${TRACKS.length}</span>`;
  s+=`<button class="chip" id="hMute">${save.muted?'🔇':'🔊'}</button>`;
  if(s!==lastHud){lastHud=s;$('hud').innerHTML=s;const m=$('hMute');m.onclick=()=>{audio();save.muted=!save.muted;persist();lastHud=''};const pz=$('hPause');if(pz)pz.onclick=pauseGame}
  $('pad').classList.toggle('hide',!(isTouch&&mode==='race'&&!demo));$('wheel').style.visibility=tiltActive()?'hidden':'visible';
- $('gasLbl').textContent=save.auto?'WHOA':'GALLOP';$('bGas').firstElementChild.textContent=save.auto?'✋':'🐾';
+ $('bGal').style.display=save.auto?'none':'flex';{const t=mode==='race'&&racers[0]?tierOf(racers[0].drift):0;const b=$('bGas');for(let k=1;k<4;k++)b.classList.toggle('charge'+k,t===k)}
 }
 
 /* ---------------- menus ---------------- */
@@ -502,7 +512,7 @@ function titleScreen(){
  show(`<div class="logo" id="logo">🦄 HOOFBEAT HILLS 🦄</div><h1 class="choc">MUD DERBY</h1><p>Rip around the chocolate fairy fields!</p>
  <div class="row">${kinds.map(k=>`<button class="mbtn ${save.racer===k?'pick':'alt'}" data-k="${k}">${KIND_INFO[k].label}<br><span class="small">${KIND_INFO[k].sub}</span></button>`).join('')}</div>
  <div class="row"><button class="mbtn" data-primary="1" id="go">${fresh?'RACE! 🏁':'KEEP RACING 🏁'}</button><button class="mbtn alt" id="auto">Auto-gallop: ${save.auto?'ON':'OFF'}</button>${isTouch?`<button class="mbtn alt" id="steer">Steer: ${save.steer==='tilt'?'📱 Tilt':'🎡 Wheel'}</button>`:''}<button class="mbtn alt" id="easy">${save.easy?'🌸 Easy':'🔥 Arcade'}</button>${fresh?'':'<button class="mbtn alt" id="reset">New season</button>'}</div>
- <p class="small" id="tiltMsg" style="color:#c2185b"></p><p class="small">${isTouch?'Turn the wheel to steer · ✨ to boost · or just touch the track and your pony runs to your finger!':'←/→ turn · ↑ gallop · ↓ whoa · Space boost · or click the track · PS controller works too'}</p>`,()=>{
+ <p class="small" id="tiltMsg" style="color:#c2185b"></p><p class="small">${isTouch?'Turn the wheel to steer · hold ✨ to boost · hold ✋ WHOA around turns to drift, let go to ZOOM · or just touch the track and your pony runs to your finger!':'←/→ turn · ↑ gallop · hold ↓ to drift (let go to zoom) · hold Space to boost · or click the track · PS controller works too'}</p>`,()=>{
   ov.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{save.racer=b.dataset.k;persist();titleScreen()});
   $('go').onclick=preRace;$('auto').onclick=()=>{save.auto=!save.auto;persist();titleScreen()};$('easy').onclick=()=>{save.easy=!save.easy;persist();titleScreen()};
   if($('steer'))$('steer').onclick=async()=>{if(save.steer==='tilt'){save.steer='wheel';persist();titleScreen();return}
@@ -532,7 +542,7 @@ function endRace(){
  <p>Prize: 🪙 ${prize[myPlace-1]} · Total 🪙 ${save.coins}</p>
  <div class="row"><button class="mbtn" data-primary="1" id="shop">🛒 Pony Shop</button><button class="mbtn alt" id="next">${seasonDone?'Season trophy 🏆':'Next race ▶'}</button></div>`,()=>{$('shop').onclick=shop;$('next').onclick=seasonDone?seasonEnd:preRace});
 }
-const UPS=[['speed','🌈 Rainbow Shoes','top speed'],['hooves','🐾 Zoomy Hooves','get going faster'],['grip','🧲 Sticky Sprinkles','turn & grip in the mud'],['horn','✨ Magic Horn','more boosts each race']];
+const UPS=[['speed','🌈 Rainbow Shoes','top speed'],['hooves','🐾 Zoomy Hooves','get going faster'],['grip','🧲 Sticky Sprinkles','turn & grip in the mud'],['horn','✨ Magic Horn','bigger boost tank']];
 const cost=l=>50*(l+1);
 function shop(){
  show(`<h2>🛒 Pony Shop</h2><p>🪙 ${save.coins}</p><div class="shop">${UPS.map(([k,n,d])=>{const l=save.up[k];return`<div>${n}<br><span class="small">${d}</span></div><div class="pips">${'●'.repeat(l)}${'○'.repeat(5-l)}</div><div><button class="mbtn ${l<5&&save.coins>=cost(l)?'':'alt'}" data-u="${k}" ${l>=5||save.coins<cost(l)?'disabled':''}>${l>=5?'MAX':'🪙'+cost(l)}</button></div>`}).join('')}</div>
