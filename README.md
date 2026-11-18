@@ -4,6 +4,10 @@ An 8-bit pastel pony racer in the spirit of NES Excitebike. Gallop rolling hills
 
 **Play:** open `index.html` in any browser, or turn on GitHub Pages for this repo and visit the site. On iPad, open it in Safari and use Share → Add to Home Screen for a full-screen app icon.
 
+## Mud Derby (sequel)
+
+`derby/` is **Hoofbeat Hills: Mud Derby**, an Off-Road-style top-down rally through chocolate-mud fairy fields: 6 tall tracks (two figure-8s with a wafer bridge), pony shop upgrades, Easy/Arcade modes, and steering by on-screen wheel, touch, keyboard, controller or phone tilt. Play it at `/derby/` on this repo's GitHub Pages site.
+
 ## How to play
 
 The horse always runs on its own. You only steer and jump.
