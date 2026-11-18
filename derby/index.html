@@ -257,7 +257,7 @@ const prog=r=>r.lap*tr.N+r.idx;
 const tilt={on:false,seen:false,raw:null,base:null,ang:0,steer:0,listening:false};
 function onMotion(e){const g=e.accelerationIncludingGravity;if(!g||g.x==null||g.y==null)return;if(Math.abs(g.x)+Math.abs(g.y)<3)return;tilt.seen=true;
  const a=Math.atan2(g.x,g.y);if(tilt.base==null)tilt.base=a;if(mode==='race'&&!demo&&countT>0)tilt.base=a;
- const th=-angDiff(a-tilt.base);tilt.ang+=(th-tilt.ang)*.3;const dz=.06,full=.55,v=Math.abs(tilt.ang)<dz?0:(tilt.ang-Math.sign(tilt.ang)*dz)/(full-dz);tilt.steer=clamp(v,-1,1)}
+ const th=-angDiff(a-tilt.base);tilt.ang+=(clamp(th,-.45,.45)-tilt.ang)*.3;const dz=.04,full=.3,v=Math.abs(tilt.ang)<dz?0:(tilt.ang-Math.sign(tilt.ang)*dz)/(full-dz);tilt.steer=clamp(v,-1,1)}
 async function enableTilt(){try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')return false}}catch(e){return false}
  if(!tilt.listening){addEventListener('devicemotion',onMotion);tilt.listening=true}return true}
 const tiltActive=()=>save.steer==='tilt'&&tilt.seen;
@@ -273,9 +273,8 @@ function applyTilt(){
  const st=$('stage'),dpr=Math.min(2,window.devicePixelRatio||1),cw=st.clientWidth,ch=st.clientHeight;
  if(view.width!==Math.round(cw*dpr)||view.height!==Math.round(ch*dpr)){view.width=Math.round(cw*dpr);view.height=Math.round(ch*dpr)}
  if(grassPal!==tr.pal){grassPat=makeGrass(tr.pal);grassPal=tr.pal}
- const p=racers[0],tx=p.x+p.vx*.4,ty=p.y-p.dh-p.z*.5+p.vy*.4;
- if(!cam.on){cam.x=tx;cam.y=ty;cam.on=true}cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;
- cam.z=Math.max(2,Math.min(cw,ch)/165);cam.cw=cw;cam.ch=ch;
+ cam.x=W/2;cam.y=H/2;cam.on=true;
+ cam.z=Math.min(cw/W,ch/H);cam.cw=cw;cam.ch=ch;
  const g=vctx;g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
  g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.ang);g.scale(cam.z,cam.z);g.translate(-cam.x,-cam.y);
  g.fillStyle=grassPat;g.fillRect(cam.x-1500,cam.y-1500,3000,3000);
