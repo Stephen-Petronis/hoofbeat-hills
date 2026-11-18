@@ -15,6 +15,7 @@ button.chip{font:inherit;color:inherit;cursor:pointer}
 #stage{grid-area:stage;position:relative;display:flex;align-items:flex-start;justify-content:center;min-height:0;min-width:0;padding:4px}
 #wrap{position:relative;transform-origin:50% 50%;will-change:transform}
 canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;border:4px solid var(--ink);border-radius:8px;background:#a6e3a0;box-shadow:0 6px 0 rgba(90,45,110,.35);touch-action:none}
+#view{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:none;border:0;border-radius:0;box-shadow:none}
 #ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px}
 #ov.hide{display:none}
 .panel{background:rgba(255,255,255,.95);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink);padding:12px 14px;max-width:100%;max-height:100%;overflow:auto;text-align:center;touch-action:pan-y}
@@ -260,8 +261,31 @@ function onMotion(e){const g=e.accelerationIncludingGravity;if(!g||g.x==null||g.
 async function enableTilt(){try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')return false}}catch(e){return false}
  if(!tilt.listening){addEventListener('devicemotion',onMotion);tilt.listening=true}return true}
 const tiltActive=()=>save.steer==='tilt'&&tilt.seen;
-function applyTilt(){const wr=$('wrap');if(!tiltActive()||mode!=='race'||demo){wr.style.transform='';return}
- const t=tilt.ang,w=cv.offsetWidth,h=cv.offsetHeight,c=Math.abs(Math.cos(t)),sn=Math.abs(Math.sin(t));const sc=Math.min(w/(w*c+h*sn),h/(w*sn+h*c));wr.style.transform=`rotate(${(-t*180/Math.PI).toFixed(2)}deg) scale(${sc.toFixed(3)})`}
+const view=document.createElement('canvas');view.id='view';const vctx=view.getContext('2d');
+let cam={x:160,y:200,z:2,on:false},grassPat=null,grassPal=null;
+const camActive=()=>tiltActive()&&mode==='race'&&!demo;
+function makeGrass(pal){const c=document.createElement('canvas');c.width=c.height=48;const g=c.getContext('2d');const R=rng(99);g.fillStyle=pal.grass;g.fillRect(0,0,48,48);g.fillStyle=pal.grass2;for(let i=0;i<70;i++)g.fillRect((R()*48)|0,(R()*48)|0,1+(R()*2|0),1);for(let i=0;i<5;i++){const fx=(R()*46+1)|0,fy=(R()*46+1)|0;g.fillStyle=pal.flowers[(R()*pal.flowers.length)|0];g.fillRect(fx-1,fy,3,1);g.fillRect(fx,fy-1,1,3)}return vctx.createPattern(c,'repeat')}
+function applyTilt(){
+ const on=camActive(),wr=$('wrap');wr.style.transform='';
+ if(!view.parentNode)$('stage').appendChild(view);
+ view.style.display=on?'block':'none';wr.style.visibility=on?'hidden':'visible';
+ if(!on){cam.on=false;return}
+ const st=$('stage'),dpr=Math.min(2,window.devicePixelRatio||1),cw=st.clientWidth,ch=st.clientHeight;
+ if(view.width!==Math.round(cw*dpr)||view.height!==Math.round(ch*dpr)){view.width=Math.round(cw*dpr);view.height=Math.round(ch*dpr)}
+ if(grassPal!==tr.pal){grassPat=makeGrass(tr.pal);grassPal=tr.pal}
+ const p=racers[0],tx=p.x+p.vx*.4,ty=p.y-p.dh-p.z*.5+p.vy*.4;
+ if(!cam.on){cam.x=tx;cam.y=ty;cam.on=true}cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;
+ cam.z=Math.max(2,Math.min(cw,ch)/165);cam.cw=cw;cam.ch=ch;
+ const g=vctx;g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
+ g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.ang);g.scale(cam.z,cam.z);g.translate(-cam.x,-cam.y);
+ g.fillStyle=grassPat;g.fillRect(cam.x-1500,cam.y-1500,3000,3000);
+ g.drawImage(cv,0,0);g.restore();
+ g.save();g.translate(cw/2,ch/2);g.rotate(-tilt.ang);g.translate(-cw/2,-ch/2);drawTexts(g,cw,ch,Math.min(cw,ch)/320*1.1);g.restore();
+}
+function viewToWorld(e){const b=view.getBoundingClientRect(),dx=e.clientX-b.left-cam.cw/2,dy=e.clientY-b.top-cam.ch/2,a=tilt.ang,c=Math.cos(a),s2=Math.sin(a);return{x:cam.x+(dx*c-dy*s2)/cam.z,y:cam.y+(dx*s2+dy*c)/cam.z}}
+view.addEventListener('pointerdown',e=>{audio();target=viewToWorld(e);try{view.setPointerCapture(e.pointerId)}catch(_){}});
+view.addEventListener('pointermove',e=>{if(target)target=viewToWorld(e)});
+['pointerup','pointercancel'].forEach(t=>view.addEventListener(t,()=>{target=null}));
 const keys={};const touch={l:false,r:false,gas:false,boost:false,wheel:0};let target=null;let gpPrev=[];
 function gamepad(){try{const gs=navigator.getGamepads?navigator.getGamepads():[];for(const g of gs)if(g&&g.connected)return g}catch(e){}return null}
 function readInput(r){
@@ -421,7 +445,12 @@ function drawPickup(g,p){const b=Math.round(Math.sin(p.t*5)*1.2);g.fillStyle='rg
  if(p.type==='star'){g.save();g.translate(p.x,p.y-1+b);g.rotate(p.t*2);g.fillStyle='#5a2d6e';starPath(g,4.6);g.fill();g.fillStyle='#ffe66b';starPath(g,3.4);g.fill();g.restore()}
  else{g.fillStyle='#8a5a00';g.beginPath();g.ellipse(p.x,p.y-1+b,3.3*Math.abs(Math.cos(p.t*3))+.8,3.3,0,0,7);g.fill();g.fillStyle='#ffd23a';g.beginPath();g.ellipse(p.x,p.y-1+b,2.4*Math.abs(Math.cos(p.t*3))+.5,2.4,0,0,7);g.fill()}}
 function starPath(g,R){g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr=k%2?R*.45:R;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}g.closePath()}
-function bigText(txt,y,size,col){ctx.font=`900 ${size}px "Trebuchet MS",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='#5a2d6e';ctx.strokeText(txt,W/2,y);ctx.fillStyle=col;ctx.fillText(txt,W/2,y)}
+function bigText(txt,y,size,col,g=ctx,w=W,k=1){g.font=`900 ${size*k}px "Trebuchet MS",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.lineWidth=5*k;g.lineJoin='round';g.strokeStyle='#5a2d6e';g.strokeText(txt,w/2,y);g.fillStyle=col;g.fillText(txt,w/2,y)}
+function drawTexts(g,w,h,k){const T=(t,dy,sz,c)=>bigText(t,h/2+dy*k,sz,c,g,w,k);
+ if(countT>0){const n=Math.ceil(countT);if(n<=3)T(String(n),0,64,['#7fe0c0','#ffe66b','#ff8fc8'][n-1]);if(tiltActive())T('hold your phone straight!',48,16,'#ffffff')}
+ else if(raceT<0.9)T('GO!',0,64,'#ffffff');
+ if(flash)T(flash.txt,-30,26,'#ffe66b');
+ if(racers[0].done)T('FINISH!',0,40,'#ffe66b')}
 function draw(){
  if(!tr)return;
  ctx.drawImage(bg.base,0,0);
@@ -438,10 +467,7 @@ function draw(){
  for(const p of parts)if(p.z>0.5){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.col;ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),1+(p.z>8),1+(p.z>8))}
  ctx.globalAlpha=1;
  if(demo||mode!=='race')return;
- if(countT>0){const n=Math.ceil(countT);if(n<=3)bigText(String(n),H/2,64,['#7fe0c0','#ffe66b','#ff8fc8'][n-1]);if(tiltActive())bigText('hold your phone straight!',H/2+48,16,'#ffffff')}
- else if(raceT<0.9)bigText('GO!',H/2,64,'#ffffff');
- if(flash)bigText(flash.txt,H/2-30,26,'#ffe66b');
- if(racers[0].done)bigText('FINISH!',H/2,40,'#ffe66b');
+ if(!camActive())drawTexts(ctx,W,H,1);
 }
 function ordinal(n){return n+(['st','nd','rd'][n-1]||'th')}
 function standings(){return racers.slice().sort((a,b)=>{if(a.done&&b.done)return a.ft-b.ft;if(a.done)return -1;if(b.done)return 1;return prog(b)-prog(a)})}
