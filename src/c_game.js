@@ -19,6 +19,10 @@ let flipV=1, flipTarget=1, rbClock=0, rbWarned=false, invOn=false;
 const controlsSwapped=()=>!!(WR.mirror || (WR.flipEvery && flipTarget<0));
 const textBackwards=()=>['countdown','race','finish'].includes(mode) && !demo && !twoP && (WR.backwards || (WR.flipEvery && flipTarget<0));
 // STAR TURBO meter
+// every 10 levels STAR TURBO gets harder to earn: tricks (dives, flips, combos, smooth landings) charge it less and less,
+// until from level 31 only gems and power-ups fill it. Gems and power-ups always count fully.
+const starTier=()=>freeMode?0:Math.floor((Math.max(1,level)-1)/10);
+function starGain(kind){ const v=CONFIG.star[kind]||0; if(kind==='gem'||kind==='bigGem'||kind==='item') return v; return v*Math.max(0,1-CONFIG.star.trickFade*starTier()); }
 // the meter carries over between races: whatever is left is saved and waiting next time
 function addStar(r,v){ if(!r.isPlayer||demo||twoP||r.starT>0) return; const old=r.star||0, was=old>=1; r.star=Math.min(1,old+v);
   save.star=r.star; if(Math.floor(old*20)!==Math.floor(r.star*20)) persist(); if(!was && r.star>=1){ SFX.fanfare(); toast('STAR TURBO READY!'); } }
@@ -28,7 +32,7 @@ function useStar(r){ if(r.state==='tumble') return; if((r.star||0)<1 || r.starT>
 function startFlip(r){ if(r.flipT>0) return; r.flipT=CONFIG.flip.time; if(r.isPlayer && !demo) SFX.double(); }
 function flipReward(r){
   r.flipT=0; r.flipA=0; const n=r.flips||0; r.flips=0; if(!n) return;
-  r.vx+=CONFIG.flip.boost*n; r.gems+=CONFIG.flip.gems*n; r.rainbow=Math.max(r.rainbow,1); addStar(r,CONFIG.star.flip*n); emit('flippy',r,n); }
+  r.vx+=CONFIG.flip.boost*n; r.gems+=CONFIG.flip.gems*n; r.rainbow=Math.max(r.rainbow,1); addStar(r,starGain('flip')*n); emit('flippy',r,n); }
 let viewZoom=1;   // camera pulls back for big jumps, bullet time and a big free-run herd
 let level = Math.max(1, save.maxLevel|0);
 let chosen='unicorn', chosen2='pegasus', pickStage=0;
@@ -121,7 +125,7 @@ function emit(type,r,arg){
     case 'splash': SFX.splash(); break;
     case 'star': SFX.fanfare(); toast('★ STAR TURBO! ★',true); shake=Math.max(shake,3); break;
     case 'flippy': SFX.combo(3); toast(who+(arg>1?'FLIPPY FLOP ×'+arg+'!':'FLIPPY FLOP!')+'  +'+CONFIG.flip.gems*arg+' ◆'); cheerT=1.4; break;
-    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,CONFIG.star.item); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!',sight:'SPARKLE SIGHT! SEE EVERY LANDING'}[arg]); cheerT=1.2; break;
+    case 'item': if(r.isPlayer && !twoP && !demo){ startFab(); addStar(r,starGain('item')); } SFX.item(); toast(who+{shield:'BUBBLE SHIELD!',magnet:'GEM MAGNET!',super:'SUPER RAINBOW!',sight:'SPARKLE SIGHT! SEE EVERY LANDING'}[arg]); cheerT=1.2; break;
     case 'combo': SFX.combo(arg.n); toast(who+'COMBO ×'+arg.n+'  +'+arg.bonus+' ◆'); cheerT=1.6; break;
   }
 }
@@ -140,13 +144,13 @@ function land(r,g){
   flipReward(r);
   r.dive=false; r.alt=g; r.state='ground'; r.cloud=null; r.angle=Math.atan(ls);
   if(hard) r.vx*=.93;
-  if(dive && ls<-0.06){ r.vx+=CONFIG.dive.boost+(-ls)*60; r.rainbow=Math.max(r.rainbow,1.2); emit('slam',r); addStar(r,CONFIG.star.dive); }
+  if(dive && ls<-0.06){ r.vx+=CONFIG.dive.boost+(-ls)*60; r.rainbow=Math.max(r.rainbow,1.2); emit('slam',r); addStar(r,starGain('dive')); }
   else if(dive){ emit('thud',r); if(ls>0.3) r.vx*=.85; }
-  else if(ls<-0.15 && r.airT>.25){ r.vx+=CONFIG.smoothLanding; if(r.isPlayer) emit('smooth',r); addStar(r,CONFIG.star.smooth); }
+  else if(ls<-0.15 && r.airT>.25){ r.vx+=CONFIG.smoothLanding; if(r.isPlayer) emit('smooth',r); addStar(r,starGain('smooth')); }
   else if(ls>0.3) r.vx*=.85;
-  r.vz=slopeAt(r.x)*r.vx; r.glide=r.P.glideTime||0; r.gliding=false; r.hover=r.P.hoverTime||0; r.hovering=false; r.slowmoUsed=false;
+  r.vz=slopeAt(r.x)*r.vx; r.gliding=false; r.hovering=false; r.slowmoUsed=false; r.groundT=0;
   if(WR.sticky && !dive){ r.vx*=1-WR.sticky; burst(r.x,ry(r)-2,['#ff7fc1','#ffc0e0','#ffffff'],5,30,0); }
-  if(r.isPlayer && r.combo>=2){ const bonus=CONFIG.combo(r.combo); r.gems+=bonus; addStar(r,CONFIG.star.combo*r.combo); r.bestCombo=Math.max(r.bestCombo,r.combo); emit('combo',r,{n:r.combo,bonus}); burst(r.x,ry(r)-14,RAINBOW,20,90,0); }
+  if(r.isPlayer && r.combo>=2){ const bonus=CONFIG.combo(r.combo); r.gems+=bonus; addStar(r,starGain('combo')*r.combo); r.bestCombo=Math.max(r.bestCombo,r.combo); emit('combo',r,{n:r.combo,bonus}); burst(r.x,ry(r)-14,RAINBOW,20,90,0); }
   r.combo=0;
   emit(hard?'hardland':'land',r);
   // Mushroom Grove: everything bounces (dive to stick the landing)
@@ -196,6 +200,10 @@ function stepRacer(r,inp,dt,live){
     if(P.charge && live && !c && r.jumpBuf>0 && s>0.1){ r.jumpBuf=0; if(r.chargeT<=0) emit('charge',r); r.chargeT=CONFIG.powers.chargeTime; }
     if(r.chargeT>0){ r.chargeT-=dt; if(s>0.06 && inp.jump) r.chargeT=Math.max(r.chargeT,.15); r.rainbow=Math.max(r.rainbow,.2);
       if(Math.random()<.5) particles.push({x:r.x-8,y:ry(r)-1,vx:-40-Math.random()*40,vy:-20-Math.random()*20,life:.35,c:'#c8b8a0',sz:2}); }
+    // tired wings: glide (and ghost hover) refill while running on the ground, not instantly on every landing
+    r.groundT=(r.groundT||0)+dt; if(r.groundT>CONFIG.hopRest) r.hopChain=0;
+    if(P.glideTime) r.glide=Math.min(P.glideTime, r.glide+dt*P.glideTime*CONFIG.wingRefill);
+    if(P.hoverTime) r.hover=Math.min(P.hoverTime, r.hover+dt*P.hoverTime*CONFIG.wingRefill);
     let target=maxV;
     if(r.chargeT>0) target=Math.max(maxV,P.top*CONFIG.powers.chargeSpeed);
     else if(s>0.02 && r.turboT<=0 && !(r.starT>0)) target=maxV*clamp(1-s*(P.uphillDrag??CONFIG.uphillDrag), P.uphillMin??CONFIG.uphillMin, 1);
@@ -221,9 +229,12 @@ function stepRacer(r,inp,dt,live){
       for(const m of shrooms) if(m.lane===r.lane && r.x<m.x && nx>=m.x){ sh=m; break; }
       if(live && r.jumpBuf>0){
         r.jumpBuf=0; const splash=inGoo&&swim;
-        goAir(r,nx,ng+.1,(Math.max(r.vz,0)+P.jump*WR.jump)*(splash?1.3:1),true); emit(splash?'splash':'jump',r);
+        // bunny-hopping (jumping again the instant you land) makes each hop a little smaller and slower
+        if((r.groundT??9)<CONFIG.hopRest) r.hopChain=(r.hopChain||0)+1; else r.hopChain=0;
+        const tired=Math.max(CONFIG.hopMin,1-CONFIG.hopTired*r.hopChain); if(r.hopChain) r.vx*=1-CONFIG.hopSlow*Math.min(r.hopChain,4);
+        goAir(r,nx,ng+.1,(Math.min(Math.max(r.vz,0),P.jump*CONFIG.launchCap*.5)+P.jump*WR.jump*tired)*(splash?1.3:1),true); emit(splash?'splash':'jump',r);
       } else if(sh){ sh.squish=.3; goAir(r,nx,ng+.1,CONFIG.shroomBounce,true); emit('bounce',r); }
-      else if(ng<ball-0.06 && r.vx>20){ goAir(r,nx,ball,r.vz,false); }
+      else if(ng<ball-0.06 && r.vx>20){ goAir(r,nx,ball,Math.min(r.vz,P.jump*CONFIG.launchCap),false); }
       else { r.vz=(ng-r.alt)/dt; r.alt=ng; r.x=nx; r.angle+=(Math.atan(s)-r.angle)*Math.min(1,dt*20); }
     }
     r.stride+=r.vx*dt/7;
@@ -255,6 +266,8 @@ function stepRacer(r,inp,dt,live){
       if(Math.random()<.35) particles.push({x:r.x-10+Math.random()*20,y:ry(r)-6-Math.random()*20,vx:-10-Math.random()*10,vy:-8-Math.random()*8,life:.6,c:Math.random()<.5?'#9affb0':'#e8fff0',sz:1,g:0}); }
     else if(inp.jump && r.glide>0 && r.vz<0 && P.glideTime){ r.glide-=dt; r.gliding=true; if(r.vz<-P.glideFall) r.vz=-P.glideFall; }
     r.vx=Math.max(0, r.vx-4*dt);
+    { const cruise=P.top*CONFIG.airCruise; if(r.vx>cruise && !(r.starT>0)) r.vx-=(r.vx-cruise)*(r.gliding||r.hovering?CONFIG.glideDrag:CONFIG.airDrag)*dt;
+      if(r.gliding && r.vx>P.top) r.vx-=(r.vx-P.top)*CONFIG.glideDrag*dt; }
     r.x+=r.vx*dt; r.alt+=r.vz*dt;
     r.angle=clamp(Math.atan2(r.vz,Math.max(r.vx,40))*.6,-.7,.7);
     for(const c of clouds){ if(r.vz<=0 && prevAlt>=c.h-.5 && r.alt<=c.h && r.x>=c.x && r.x<=c.x+c.len){
@@ -290,7 +303,7 @@ function collect(r,dt){
     if(dx<-40 || dx>CONFIG.items.magnetRange+10) continue;
     if(r.magnetT>0 && !g.pull && Math.abs(dx)<CONFIG.items.magnetRange && Math.abs(g.alt-cy)<60) g.pull=r;
     const near = g.pull===r ? (Math.abs(dx)<7 && Math.abs(g.alt-cy)<10) : (Math.abs(g.ly-r.laneY)<.55 && Math.abs(dx)<8 && Math.abs(g.alt-cy)<12);
-    if(near){ g.taken=true; r.gems+=g.v; r.gemN++; r.gemT=.7; addStar(r,g.big?CONFIG.star.bigGem:CONFIG.star.gem);
+    if(near){ g.taken=true; r.gems+=g.v; r.gemN++; r.gemT=.7; addStar(r,starGain(g.big?'bigGem':'gem'));
       if(r.isPlayer && !demo) SFX.gem(r.gemN);
       for(let i=0;i<5;i++) particles.push({x:g.x,y:laneY(g.ly)-g.alt,vx:(Math.random()-.5)*60,vy:-20-Math.random()*40,life:.4,c:g.big?'#ffd76a':['#ffffff','#ffb3d6','#a6f2d6'][i%3],sz:1,star:i%2===0});
       if(g.big) cheerT=Math.max(cheerT,.8); }

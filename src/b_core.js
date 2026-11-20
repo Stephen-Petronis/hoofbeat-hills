@@ -32,6 +32,10 @@ const CONFIG = {
   unlockSeaPonyAt: 8,    // beat this level's boss to unlock the Sea Pony
   tumbleTime: 1.2, safeTime: 1.0,
   airSlow: 130, airPush: 70, jumpBuffer: 0.12, coyoteTime: 0.12,
+  // anti-forever-flying: wings refill on the ground (1 = full in a second), speed above airCruise x top bleeds off in the air,
+  // and a jump or hill crest can't fling you up faster than launchCap x your jump
+  hopRest: .3, hopTired: .14, hopMin: .55, hopSlow: .035,
+  wingRefill: .55, airCruise: 1.15, airDrag: .45, glideDrag: .9, launchCap: 1.1,
   hurdleHeight: 10, boost: 55, gooSpeed: 58, shroomBounce: 230,
   // hills: uphill slows you toward uphillMin × top speed; downhill pushes you past top speed up to speedCap × top
   uphillDrag: 1.35, uphillMin: 0.34, uphillBrake: 420, downhillPush: 540, coastDrag: 38, speedCap: 2.3,
@@ -43,7 +47,7 @@ const CONFIG = {
   tallMax: 310,
   cloudPlatforms: false, // the jump-on clouds (sky routes) are switched off for now          // tallest game screen (in pixels at 320 wide) when there's room above the controls
   // STAR TURBO: fills up slowly; when full, tap STAR to blast off golden and unstoppable
-  star: { time: 5.5, speed: 1.75, gem: .009, bigGem: .04, dive: .07, item: .12, combo: .035, flip: .09, smooth: .025 },
+  star: { time: 5.5, speed: 1.75, gem: .009, bigGem: .04, dive: .07, item: .12, combo: .035, flip: .09, smooth: .025, trickFade: .34 },
   flip: { window: .32, time: .55, boost: 45, gems: 3 },   // double-tap jump in the air for a flippy flop
   zoom: { airStart: 10, airRange: 220, airMin: .26, peakStart: 60, peakRange: 200, peakMin: .5, uphill: 1.12, slowmo: .5, outSpeed: 2.6, inSpeed: 1.8 },   // press DOWN in the air: drop fast; land on a downhill for a boost
   skeletonHit: 14,       // how close a skeleton horse has to be to trip you

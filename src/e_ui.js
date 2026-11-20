@@ -121,6 +121,7 @@ function startRace(){
   toast(boss ? 'BOSS RACE: '+CONFIG.bosses[bossKind(level)].name.toUpperCase()+'!' : 'LEVEL '+level+': '+levelName(level).toUpperCase(), true);
   if(boss) SFX.fanfare();
   const tip = WR.tip ? WR.tip : levelStyle(level)==='spooky' ? 'JUMP OVER THE SKELETON HORSES!' : levelStyle(level)==='mountains' ? 'CLIMB SLOW, RACE DOWN FAST!' : levelStyle(level)==='speedway' ? 'RACE DOWNHILL FOR TURBO SPEED!' : '';
+  { const tier=starTier(); if(!twoP && tier>0) setTimeout(()=>{ if(mode==='countdown'||mode==='race') toast(tier>=3?'★ ONLY GEMS CHARGE STAR TURBO NOW! ★':'★ GRAB GEMS TO CHARGE STAR TURBO ★',true); },5200); }
   if(tip) setTimeout(()=>{ if(mode==='countdown'||mode==='race') toast(tip,true); },WR.tip?1400:2800);
 }
 let nextOnAgain=false;
